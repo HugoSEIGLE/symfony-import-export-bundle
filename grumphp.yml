@@ -1,0 +1,91 @@
+grumphp:
+  parallel:
+    enabled: true
+    max_workers: 64
+  tasks:
+    composer:
+      metadata:
+        label: "Check composer.json"
+      file: ./composer.json
+      no_check_all: false
+      no_check_lock: false
+      no_check_publish: false
+      no_local_repository: false
+      with_dependencies: false
+      strict: false
+    composer_normalize:
+      metadata:
+        label: "Check composer.json normalization format (composer-normalize)"
+      indent_size: ~
+      indent_style: ~
+      no_check_lock: false
+      no_update_lock: true
+      verbose: false
+    git_blacklist:
+      metadata:
+        label: "Check for blacklisted patterns in committed files"
+      whitelist_patterns: []
+      triggered_by: ["php"]
+      regexp_type: G
+      match_word: false
+      ignore_patterns: []
+    git_commit_message:
+      metadata:
+        label: "Check commit message"
+      allow_empty_message: false
+      enforce_capitalized_subject: false
+      enforce_no_subject_punctuations: false
+      enforce_no_subject_trailing_period: true
+      enforce_single_lined_subject: true
+      type_scope_conventions:
+        types:
+          [
+            "feat",
+            "fix",
+            "docs",
+            "style",
+            "refactor",
+            "perf",
+            "test",
+            "chore",
+            "revert",
+          ]
+      max_body_width: 120
+      max_subject_width: 120
+      case_insensitive: true
+      multiline: true
+      additional_modifiers: ""
+    jsonlint:
+      metadata:
+        label: "Check JSON files (jsonlint)"
+      ignore_patterns: []
+      detect_key_conflicts: false
+    phpcsfixer:
+      allow_risky: ~
+      cache_file: ".php-cs-fixer.cache"
+      config: ".php-cs-fixer.dist.php"
+      using_cache: ~
+      config_contains_finder: true
+      verbose: true
+      diff: false
+      triggered_by: ["php"]
+    phpversion:
+      metadata:
+        label: "Check PHP version is 8.3"
+      project: "8.3"
+    xmllint:
+      ignore_patterns: []
+      load_from_net: false
+      x_include: false
+      dtd_validation: false
+      scheme_validation: false
+      triggered_by: ["xml"]
+    yamllint:
+      metadata:
+        label: "Check YAML files (yamllint)"
+      whitelist_patterns: []
+      ignore_patterns: []
+      object_support: false
+      exception_on_invalid_type: false
+      parse_constant: false
+      parse_custom_tags: false

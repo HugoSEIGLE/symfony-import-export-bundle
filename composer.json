@@ -1,9 +1,9 @@
 {
     "name": "hugoseigle/symfony-import-export-bundle",
-    "version": "1.0.0",
     "description": "Symfony bundle for importing and exporting entities",
-    "type": "symfony-bundle",
     "license": "MIT",
+    "type": "symfony-bundle",
+    "version": "1.0.0",
     "authors": [
         {
             "name": "Hugo SEIGLE",
@@ -12,14 +12,19 @@
     ],
     "require": {
         "php": ">=8.1",
-        "symfony/framework-bundle": "^6.0 || ^7.0",
+        "doctrine/orm": "^3.3",
         "phpoffice/phpspreadsheet": "^1.23",
-        "doctrine/orm": "^3.3"
+        "symfony/framework-bundle": "^6.0 || ^7.0"
     },
     "require-dev": {
+        "ergebnis/composer-normalize": "^2.44",
+        "friendsofphp/php-cs-fixer": "^3.64",
+        "phpro/grumphp": "^2.9",
         "phpunit/phpunit": "^10.5",
         "symfony/test-pack": "^1.0"
     },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "SymfonyImportExportBundle\\": "src/"
@@ -28,6 +33,12 @@
     "autoload-dev": {
         "psr-4": {
             "SymfonyImportExportBundle\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true,
+            "phpro/grumphp": true
         }
     },
     "extra": {
@@ -39,9 +50,8 @@
             "require": "6.* || 7.*"
         }
     },
-    "minimum-stability": "stable",
-    "prefer-stable": true,
     "scripts": {
+        "lint": "php-cs-fixer fix",
         "test": "phpunit --configuration phpunit.xml.dist"
     }
 }

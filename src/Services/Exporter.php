@@ -1,17 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace SymfonyImportExportBundle\Services;
 
 use Doctrine\ORM\QueryBuilder;
+use InvalidArgumentException;
 use Override;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+use function ucfirst;
+
 class Exporter implements ExporterInterface
 {
     public function __construct(
-        private readonly Spreadsheet $spreadsheet
+        private readonly Spreadsheet $spreadsheet,
     ) {
     }
 
@@ -21,7 +26,7 @@ class Exporter implements ExporterInterface
         $results = $queryBuilder->getQuery()->getArrayResult();
 
         if ([] === $results || [] === $fields) {
-            throw new \InvalidArgumentException('Fields cannot be empty');
+            throw new InvalidArgumentException('Fields cannot be empty');
         }
 
         $sheet = $this->spreadsheet->getActiveSheet();

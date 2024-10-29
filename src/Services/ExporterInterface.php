@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace SymfonyImportExportBundle\Services;
 
 use Doctrine\ORM\QueryBuilder;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 interface ExporterInterface
