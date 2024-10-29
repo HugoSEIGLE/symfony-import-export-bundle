@@ -9,5 +9,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 interface ExporterInterface
 {
-    public function export(QueryBuilder $queryBuilder, array $fields): StreamedResponse;
+    public function exportXlsx(QueryBuilder $queryBuilder, array $fields, string $fileName): StreamedResponse;
+
+    public function exportCsv(QueryBuilder $queryBuilder, array $fields, string $fileName): StreamedResponse;
 }

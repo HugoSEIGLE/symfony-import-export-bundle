@@ -11,7 +11,9 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-use function ucfirst;
+use function fclose;
+use function fopen;
+use function fputcsv;
 
 class Exporter implements ExporterInterface
 {
@@ -21,7 +23,7 @@ class Exporter implements ExporterInterface
     }
 
     #[Override]
-    public function export(QueryBuilder $queryBuilder, array $fields): StreamedResponse
+    public function exportXlsx(QueryBuilder $queryBuilder, array $fields, string $fileName): StreamedResponse
     {
         $results = $queryBuilder->getQuery()->getArrayResult();
 
@@ -32,7 +34,7 @@ class Exporter implements ExporterInterface
         $sheet = $this->spreadsheet->getActiveSheet();
 
         foreach ($fields as $col => $field) {
-            $sheet->setCellValueByColumnAndRow($col + 1, 1, ucfirst($field));
+            $sheet->setCellValueByColumnAndRow($col + 1, 1, $field);
         }
 
         foreach ($results as $rowIndex => $result) {
@@ -47,7 +49,35 @@ class Exporter implements ExporterInterface
         });
 
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', 'attachment;filename="export.xlsx"');
+        $response->headers->set('Content-Disposition', 'attachment;filename="' . $fileName . '.xlsx"');
+        $response->headers->set('Cache-Control', 'max-age=0');
+
+        return $response;
+    }
+
+    #[Override]
+    public function exportCsv(QueryBuilder $queryBuilder, array $fields, string $fileName): StreamedResponse
+    {
+        $results = $queryBuilder->getQuery()->getArrayResult();
+
+        if ([] === $results || [] === $fields) {
+            throw new InvalidArgumentException('Fields cannot be empty');
+        }
+
+        $response = new StreamedResponse(function () use ($results, $fields) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, $fields);
+
+            foreach ($results as $result) {
+                fputcsv($handle, $result);
+            }
+
+            fclose($handle);
+        });
+
+        $response->headers->set('Content-Type', 'text/csv');
+        $response->headers->set('Content-Disposition', 'attachment;filename="export.csv"');
         $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
