@@ -7,20 +7,21 @@ namespace SymfonyImportExportBundle\Tests\Services;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query;
 use Doctrine\ORM\QueryBuilder;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use SymfonyImportExportBundle\Services\Exporter;
-use SymfonyImportExportBundle\Services\ExporterInterface;
-
 use function file_get_contents;
 use function file_put_contents;
 use function ob_get_clean;
 use function ob_start;
 use function sys_get_temp_dir;
 use function tempnam;
+
 use function unlink;
+use Override;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use SymfonyImportExportBundle\Services\Exporter;
+use SymfonyImportExportBundle\Services\ExporterInterface;
 
 class ExporterTest extends TestCase implements ExporterTestInterface
 {
@@ -32,6 +33,7 @@ class ExporterTest extends TestCase implements ExporterTestInterface
         $this->exporter = new Exporter($spreadsheet);
     }
 
+    #[Override]
     public function testExportToXlsxGeneratesCorrectResponse(): void
     {
         $queryBuilder = $this->createQueryBuilder();
@@ -65,6 +67,7 @@ class ExporterTest extends TestCase implements ExporterTestInterface
         unlink($tempFilePath);
     }
 
+    #[Override]
     public function testExportToCsvGeneratesCorrectResponse(): void
     {
         $queryBuilder = $this->createQueryBuilder();
