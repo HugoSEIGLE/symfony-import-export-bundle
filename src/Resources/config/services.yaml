@@ -1,0 +1,4 @@
+services:
+    SymfonyImportExportBundle\Services\QueryExporter:
+        arguments:
+            $spreadsheet: '@PhpOffice\PhpSpreadsheet\Spreadsheet'
