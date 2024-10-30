@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SymfonyImportExportBundle\Services;
 
+use DateTimeInterface;
 use Doctrine\ORM\Query;
 use InvalidArgumentException;
 use Override;
@@ -11,9 +12,13 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+use function array_map;
 use function fclose;
 use function fopen;
 use function fputcsv;
+use function implode;
+use function is_array;
+use function is_bool;
 
 class Exporter implements ExporterInterface
 {
@@ -41,9 +46,11 @@ class Exporter implements ExporterInterface
             $sheet->setCellValueByColumnAndRow($col + 1, 1, $field);
         }
 
-        foreach ($results as $rowIndex => $result) {
-            foreach ($fields as $colIndex => $field) {
-                $sheet->setCellValueByColumnAndRow($colIndex + 1, $rowIndex + 2, $result[$field] ?? '');
+        $values = $this->formatValues($results, $fields);
+
+        foreach ($values as $row => $value) {
+            foreach ($value as $col => $val) {
+                $sheet->setCellValueByColumnAndRow($col + 1, $row + 2, $val);
             }
         }
 
@@ -77,8 +84,10 @@ class Exporter implements ExporterInterface
 
             fputcsv($handle, $fields);
 
-            foreach ($results as $result) {
-                fputcsv($handle, $result);
+            $values = $this->formatValues($results, $fields);
+
+            foreach ($values as $value) {
+                fputcsv($handle, $value);
             }
 
             fclose($handle);
@@ -89,5 +98,33 @@ class Exporter implements ExporterInterface
         $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
+    }
+
+    private function formatValues(array $values, array $fields): array
+    {
+        return array_map(function ($result) use ($fields) {
+            return array_map(fn ($field) => $this->formatValue($result[$field] ?? ''), $fields);
+        }, $values);
+    }
+
+    private function formatValue(mixed $value): string
+    {
+        if (null === $value) {
+            return '';
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_array($value)) {
+            return implode(', ', $value);
+        }
+
+        if ($value instanceof DateTimeInterface) {
+            return $value->format('Y-m-d H:i:s');
+        }
+
+        return (string) $value;
     }
 }
