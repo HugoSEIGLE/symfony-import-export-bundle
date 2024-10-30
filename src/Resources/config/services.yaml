@@ -1,6 +1,8 @@
 services:
-    SymfonyImportExportBundle\:
-        resource: '../*'
-        exclude: '../{DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
+    SymfonyImportExportBundle\Services\Exporter:
         autowire: true
         autoconfigure: true
+        public: true
+
+    SymfonyImportExportBundle\Services\ExporterInterface:
+        alias: SymfonyImportExportBundle\Services\Exporter
