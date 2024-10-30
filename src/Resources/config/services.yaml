@@ -8,6 +8,9 @@ services:
         arguments:
             $spreadsheet: '@PhpOffice\PhpSpreadsheet\Spreadsheet'
             $methodToSnake: '@SymfonyImportExportBundle\Services\MethodToSnakeInterface'
+            $dateFormat: '%import_export.date_format%'
+            $boolTrue: '%import_export.bool_true%'
+            $boolFalse: '%import_export.bool_false%'
         autowire: true
         autoconfigure: true
         public: true

@@ -31,6 +31,9 @@ class Exporter implements ExporterInterface
         private readonly Spreadsheet $spreadsheet,
         private readonly TranslatorInterface $translator,
         private readonly MethodToSnakeInterface $methodToSnake,
+        private readonly string $dateFormat = 'Y-m-d H:i:s',
+        private readonly string $boolTrue = 'true',
+        private readonly string $boolFalse = 'false',
     ) {
     }
 
@@ -144,9 +147,9 @@ class Exporter implements ExporterInterface
     {
         return match (true) {
             null === $value => '',
-            is_bool($value) => $value ? 'true' : 'false',
+            is_bool($value) => $value ? $this->boolTrue : $this->boolFalse,
             is_array($value) => implode(', ', $value),
-            $value instanceof DateTimeInterface => $value->format('Y-m-d H:i:s'),
+            $value instanceof DateTimeInterface => $value->format($this->dateFormat),
             $value instanceof ArrayCollection || $value instanceof PersistentCollection => implode(', ', $value->toArray()),
             default => (string) $value,
         };
