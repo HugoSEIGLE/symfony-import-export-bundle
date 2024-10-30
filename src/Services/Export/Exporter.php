@@ -26,7 +26,9 @@ use function gettype;
 use function implode;
 use function is_array;
 use function is_bool;
+use function is_object;
 use function is_scalar;
+use function is_string;
 use function method_exists;
 use function sprintf;
 
@@ -195,6 +197,8 @@ class Exporter implements ExporterInterface
             $value instanceof DateTimeInterface => $value->format($this->dateFormat),
             $value instanceof ArrayCollection || $value instanceof PersistentCollection => implode(', ', $value->toArray()),
             is_scalar($value) => (string) $value,
+            is_string($value) => $value,
+            is_object($value) => method_exists($value, '__toString') ? (string) $value : throw new InvalidArgumentException(sprintf('Cannot cast object of class %s to string', get_class($value))),
             default => throw new InvalidArgumentException(sprintf('Cannot cast value of type %s to string', gettype($value))),
         };
     }

@@ -16,4 +16,4 @@ services:
         public: true
 
     SymfonyImportExportBundle\Services\Export\ExporterInterface:
-        alias: SymfonyImportExportBundle\Services\Exporter
+        alias: SymfonyImportExportBundle\Services\Export\Exporter
