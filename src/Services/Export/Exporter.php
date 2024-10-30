@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Services;
+namespace SymfonyImportExportBundle\Services\Export;
 
 use DateTimeInterface;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -13,6 +13,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 
 use function array_map;
 use function fclose;

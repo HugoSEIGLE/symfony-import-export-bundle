@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Services;
+namespace SymfonyImportExportBundle\Services\Import;
 
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;

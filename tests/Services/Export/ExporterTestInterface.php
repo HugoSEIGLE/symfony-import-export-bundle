@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Tests\Services;
+namespace SymfonyImportExportBundle\Tests\Services\Export;
 
 use PHPUnit\Framework\TestCase;
 

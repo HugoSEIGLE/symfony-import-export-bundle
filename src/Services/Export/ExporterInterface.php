@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Services;
+namespace SymfonyImportExportBundle\Services\Export;
 
 use Doctrine\ORM\Query;
 use Symfony\Component\HttpFoundation\StreamedResponse;

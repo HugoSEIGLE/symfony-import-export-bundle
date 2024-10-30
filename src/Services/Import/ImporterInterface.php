@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Services;
+namespace SymfonyImportExportBundle\Services\Import;
 
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 

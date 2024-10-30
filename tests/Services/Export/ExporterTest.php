@@ -2,21 +2,10 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Tests\Services;
+namespace SymfonyImportExportBundle\Tests\Services\Export;
 
 use DateTime;
 use Doctrine\ORM\Query;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Contracts\Translation\TranslatorInterface;
-use SymfonyImportExportBundle\Services\Exporter;
-use SymfonyImportExportBundle\Services\ExporterInterface;
-use SymfonyImportExportBundle\Services\MethodToSnake;
-use SymfonyImportExportBundle\Services\MethodToSnakeInterface;
-use SymfonyImportExportBundle\Tests\Entity\TestEntity;
-
 use function file_get_contents;
 use function file_put_contents;
 use function ob_get_clean;
@@ -24,6 +13,17 @@ use function ob_start;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PHPUnit\Framework\TestCase;
+
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use SymfonyImportExportBundle\Services\Export\Exporter;
+use SymfonyImportExportBundle\Services\Export\ExporterInterface;
+use SymfonyImportExportBundle\Services\MethodToSnake;
+use SymfonyImportExportBundle\Services\MethodToSnakeInterface;
+use SymfonyImportExportBundle\Tests\Entity\TestEntity;
 
 class ExporterTest extends TestCase
 {
