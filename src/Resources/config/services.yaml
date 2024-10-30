@@ -1,10 +1,13 @@
 services:
     PhpOffice\PhpSpreadsheet\Spreadsheet:
         class: PhpOffice\PhpSpreadsheet\Spreadsheet
+    SymfonyImportExportBundle\Services\MethodToSnakeInterface:
+        class: SymfonyImportExportBundle\Services\MethodToSnake
 
     SymfonyImportExportBundle\Services\Exporter:
         arguments:
             $spreadsheet: '@PhpOffice\PhpSpreadsheet\Spreadsheet'
+            $methodToSnake: '@SymfonyImportExportBundle\Services\MethodToSnakeInterface'
         autowire: true
         autoconfigure: true
         public: true
