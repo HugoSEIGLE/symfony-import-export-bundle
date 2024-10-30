@@ -11,6 +11,6 @@ class MethodToSnake implements MethodToSnakeInterface
 {
     public function convert(string $method): string
     {
-        return strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $method));
+        return strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', (string) $method));
     }
 }
