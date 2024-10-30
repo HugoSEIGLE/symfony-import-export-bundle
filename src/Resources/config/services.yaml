@@ -1,4 +1,6 @@
 services:
-    SymfonyImportExportBundle\Services\QueryExporter:
-        arguments:
-            $spreadsheet: '@PhpOffice\PhpSpreadsheet\Spreadsheet'
+    SymfonyImportExportBundle\:
+        resource: '../*'
+        exclude: '../{DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
+        autowire: true
+        autoconfigure: true
