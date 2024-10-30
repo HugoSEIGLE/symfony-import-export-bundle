@@ -22,6 +22,7 @@
         "ergebnis/composer-normalize": "^2.44",
         "friendsofphp/php-cs-fixer": "^3.64",
         "phpro/grumphp": "^2.9",
+        "phpstan/phpstan": "^1.12",
         "phpunit/phpunit": "^10.5",
         "symfony/test-pack": "^1.0"
     },
