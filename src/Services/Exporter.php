@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace SymfonyImportExportBundle\Services;
 
 use DateTimeInterface;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\Query;
 use InvalidArgumentException;
 use Override;
@@ -16,9 +18,12 @@ use function array_map;
 use function fclose;
 use function fopen;
 use function fputcsv;
+use function get_class;
 use function implode;
 use function is_array;
 use function is_bool;
+use function method_exists;
+use function sprintf;
 
 class Exporter implements ExporterInterface
 {
@@ -28,25 +33,25 @@ class Exporter implements ExporterInterface
     }
 
     #[Override]
-    public function exportXlsx(Query $query, array $fields, string $fileName): StreamedResponse
+    public function exportXlsx(Query $query, array $methods, string $fileName): StreamedResponse
     {
-        $results = $query->getArrayResult();
+        $results = $query->getResult();
 
-        if ([] === $results) {
+        if (null === $results || [] === $results) {
             throw new InvalidArgumentException('There are no results to export');
         }
 
-        if ([] === $fields) {
-            throw new InvalidArgumentException('Fields cannot be empty');
+        if (null === $methods || [] === $methods) {
+            throw new InvalidArgumentException('Methods cannot be empty');
         }
 
         $sheet = $this->spreadsheet->getActiveSheet();
 
-        foreach ($fields as $col => $field) {
+        foreach ($methods as $col => $field) {
             $sheet->setCellValueByColumnAndRow($col + 1, 1, $field);
         }
 
-        $values = $this->formatValues($results, $fields);
+        $values = $this->formatValues($results, $methods);
 
         foreach ($values as $row => $value) {
             foreach ($value as $col => $val) {
@@ -69,7 +74,7 @@ class Exporter implements ExporterInterface
     #[Override]
     public function exportCsv(Query $query, array $fields, string $fileName): StreamedResponse
     {
-        $results = $query->getArrayResult();
+        $results = $query->getResult();
 
         if ([] === $results) {
             throw new InvalidArgumentException('There are no results to export');
@@ -100,10 +105,16 @@ class Exporter implements ExporterInterface
         return $response;
     }
 
-    private function formatValues(array $values, array $fields): array
+    private function formatValues(array $values, array $methods): array
     {
-        return array_map(function ($result) use ($fields) {
-            return array_map(fn ($field) => $this->formatValue($result[$field] ?? ''), $fields);
+        return array_map(function ($entity) use ($methods) {
+            return array_map(function ($method) use ($entity) {
+                if (method_exists($entity, $method)) {
+                    return $this->formatValue($entity->$method());
+                }
+
+                throw new InvalidArgumentException(sprintf('Method %s does not exist on entity %s', $method, get_class($entity)));
+            }, $methods);
         }, $values);
     }
 
@@ -123,6 +134,10 @@ class Exporter implements ExporterInterface
 
         if ($value instanceof DateTimeInterface) {
             return $value->format('Y-m-d H:i:s');
+        }
+
+        if ($value instanceof ArrayCollection || $value instanceof PersistentCollection) {
+            return implode(', ', $value->toArray());
         }
 
         return (string) $value;
