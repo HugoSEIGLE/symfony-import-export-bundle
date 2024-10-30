@@ -9,10 +9,10 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\Query;
 use InvalidArgumentException;
-use Override;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 use function array_map;
 use function fclose;
@@ -29,117 +29,126 @@ class Exporter implements ExporterInterface
 {
     public function __construct(
         private readonly Spreadsheet $spreadsheet,
+        private readonly TranslatorInterface $translator,
+        private readonly MethodToSnakeInterface $methodToSnake,
     ) {
     }
 
-    #[Override]
     public function exportXlsx(Query $query, array $methods, string $fileName): StreamedResponse
     {
-        $results = $query->getResult();
+        $results = $this->getResults($query);
+        $translatedHeaders = $this->getTranslatedHeaders($methods);
 
-        if (null === $results || [] === $results) {
+        $sheet = $this->spreadsheet->getActiveSheet();
+        $this->writeHeadersToSheet($sheet, $translatedHeaders);
+        $this->writeValuesToSheet($sheet, $this->formatValues($results, $methods));
+
+        return $this->createStreamedResponse($fileName, 'xlsx');
+    }
+
+    public function exportCsv(Query $query, array $methods, string $fileName): StreamedResponse
+    {
+        $results = $this->getResults($query);
+        $translatedHeaders = $this->getTranslatedHeaders($methods);
+
+        return new StreamedResponse(function () use ($results, $translatedHeaders, $methods) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $translatedHeaders);
+
+            foreach ($this->formatValues($results, $methods) as $value) {
+                fputcsv($handle, $value);
+            }
+
+            fclose($handle);
+        }, 200, $this->getCsvHeaders($fileName));
+    }
+
+    private function getResults(Query $query): array
+    {
+        $results = $query->getResult();
+        if (empty($results)) {
             throw new InvalidArgumentException('There are no results to export');
         }
 
-        if (null === $methods || [] === $methods) {
-            throw new InvalidArgumentException('Methods cannot be empty');
+        return $results;
+    }
+
+    private function getTranslatedHeaders(array $methods): array
+    {
+        return array_map(fn ($method) => $this->translator->trans('import_export.' . $this->methodToSnake->convert($method), [], 'messages'),
+            $methods
+        );
+    }
+
+    private function writeHeadersToSheet($sheet, array $headers): void
+    {
+        foreach ($headers as $col => $header) {
+            $sheet->setCellValueByColumnAndRow($col + 1, 1, $header);
         }
+    }
 
-        $sheet = $this->spreadsheet->getActiveSheet();
-
-        foreach ($methods as $col => $field) {
-            $sheet->setCellValueByColumnAndRow($col + 1, 1, $field);
-        }
-
-        $values = $this->formatValues($results, $methods);
-
+    private function writeValuesToSheet($sheet, array $values): void
+    {
         foreach ($values as $row => $value) {
             foreach ($value as $col => $val) {
                 $sheet->setCellValueByColumnAndRow($col + 1, $row + 2, $val);
             }
         }
+    }
 
+    private function createStreamedResponse(string $fileName, string $format): StreamedResponse
+    {
         $response = new StreamedResponse(function () {
             $writer = new Xlsx($this->spreadsheet);
             $writer->save('php://output');
         });
 
-        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', 'attachment;filename="' . $fileName . '.xlsx"');
-        $response->headers->set('Cache-Control', 'max-age=0');
+        $headers = $this->getXlsxHeaders($fileName);
+        $response->headers->add($headers);
 
         return $response;
     }
 
-    #[Override]
-    public function exportCsv(Query $query, array $fields, string $fileName): StreamedResponse
+    private function getXlsxHeaders(string $fileName): array
     {
-        $results = $query->getResult();
+        return [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => sprintf('attachment;filename="%s.xlsx"', $fileName),
+            'Cache-Control' => 'max-age=0',
+        ];
+    }
 
-        if ([] === $results) {
-            throw new InvalidArgumentException('There are no results to export');
-        }
-
-        if ([] === $fields) {
-            throw new InvalidArgumentException('Fields cannot be empty');
-        }
-
-        $response = new StreamedResponse(function () use ($results, $fields) {
-            $handle = fopen('php://output', 'w');
-
-            fputcsv($handle, $fields);
-
-            $values = $this->formatValues($results, $fields);
-
-            foreach ($values as $value) {
-                fputcsv($handle, $value);
-            }
-
-            fclose($handle);
-        });
-
-        $response->headers->set('Content-Type', 'text/csv');
-        $response->headers->set('Content-Disposition', 'attachment;filename="export.csv"');
-        $response->headers->set('Cache-Control', 'max-age=0');
-
-        return $response;
+    private function getCsvHeaders(string $fileName): array
+    {
+        return [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => sprintf('attachment;filename="%s.csv"', $fileName),
+            'Cache-Control' => 'max-age=0',
+        ];
     }
 
     private function formatValues(array $values, array $methods): array
     {
         return array_map(function ($entity) use ($methods) {
             return array_map(function ($method) use ($entity) {
-                if (method_exists($entity, $method)) {
-                    return $this->formatValue($entity->$method());
+                if (!method_exists($entity, $method)) {
+                    throw new InvalidArgumentException(sprintf('Method %s does not exist on entity %s', $method, get_class($entity)));
                 }
 
-                throw new InvalidArgumentException(sprintf('Method %s does not exist on entity %s', $method, get_class($entity)));
+                return $this->formatValue($entity->$method());
             }, $methods);
         }, $values);
     }
 
     private function formatValue(mixed $value): string
     {
-        if (null === $value) {
-            return '';
-        }
-
-        if (is_bool($value)) {
-            return $value ? 'true' : 'false';
-        }
-
-        if (is_array($value)) {
-            return implode(', ', $value);
-        }
-
-        if ($value instanceof DateTimeInterface) {
-            return $value->format('Y-m-d H:i:s');
-        }
-
-        if ($value instanceof ArrayCollection || $value instanceof PersistentCollection) {
-            return implode(', ', $value->toArray());
-        }
-
-        return (string) $value;
+        return match (true) {
+            null === $value => '',
+            is_bool($value) => $value ? 'true' : 'false',
+            is_array($value) => implode(', ', $value),
+            $value instanceof DateTimeInterface => $value->format('Y-m-d H:i:s'),
+            $value instanceof ArrayCollection || $value instanceof PersistentCollection => implode(', ', $value->toArray()),
+            default => (string) $value,
+        };
     }
 }

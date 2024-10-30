@@ -4,25 +4,44 @@ declare(strict_types=1);
 
 namespace SymfonyImportExportBundle\Tests\Services;
 
+use DateTime;
 use Doctrine\ORM\Query;
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use SymfonyImportExportBundle\Services\Exporter;
-use SymfonyImportExportBundle\Services\ExporterInterface;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use Symfony\Component\CssSelector\XPath\TranslatorInterface;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use SymfonyImportExportBundle\Services\Exporter;
+use SymfonyImportExportBundle\Services\ExporterInterface;
+use SymfonyImportExportBundle\Services\MethodToSnake;
+use SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 use SymfonyImportExportBundle\Tests\Entity\TestEntity;
+
+use function file_get_contents;
+use function file_put_contents;
+use function ob_get_clean;
+use function ob_start;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
 
 class ExporterTest extends TestCase
 {
     private ExporterInterface $exporter;
-    private TranslatorInterface $translator;
+    private MethodToSnakeInterface $methodToSnake;
 
     protected function setUp(): void
     {
         $spreadsheet = new Spreadsheet();
-        $this->exporter = new Exporter($spreadsheet);
+
+        $translatorMock = $this->createMock(TranslatorInterface::class);
+        $translatorMock->method('trans')->willReturnArgument(0);
+
+        /** @var TranslatorInterface $translatorMock */
+
+        $this->methodToSnake = new MethodToSnake();
+
+        $this->exporter = new Exporter($spreadsheet, $translatorMock, $this->methodToSnake);
     }
 
     public function testExportToXlsxGeneratesCorrectResponse(): void
@@ -46,14 +65,10 @@ class ExporterTest extends TestCase
         $spreadsheet = IOFactory::load($tempFilePath);
         $sheet = $spreadsheet->getActiveSheet();
 
-        $this->assertEquals('id', $sheet->getCell('A1')->getValue());
-        $this->assertEquals('name', $sheet->getCell('B1')->getValue());
-        $this->assertEquals('email', $sheet->getCell('C1')->getValue());
-        $this->assertEquals('createdAt', $sheet->getCell('D1')->getValue());
-        $this->assertEquals('updatedAt', $sheet->getCell('E1')->getValue());
-        $this->assertEquals('price', $sheet->getCell('F1')->getValue());
-        $this->assertEquals('tags', $sheet->getCell('G1')->getValue());
-        $this->assertEquals('isActive', $sheet->getCell('H1')->getValue());
+        foreach ($methods as $col => $method) {
+            $expectedHeader = 'import_export.' . $this->methodToSnake->convert($method);
+            $this->assertEquals($expectedHeader, $sheet->getCellByColumnAndRow($col + 1, 1)->getValue());
+        }
 
         $this->assertEquals(1, $sheet->getCell('A2')->getValue());
         $this->assertEquals('John Doe', $sheet->getCell('B2')->getValue());
@@ -87,15 +102,20 @@ class ExporterTest extends TestCase
 
         $csv = file_get_contents($tempFilePath);
 
-        $expectedCsv = "getId,getName,getEmail,getCreatedAt,getUpdatedAt,getPrice,getTags,isActive\n"
-                     . "1,\"John Doe\",\"john@example.com\",\"2023-01-01 10:00:00\",\"2023-01-02 12:00:00\",99.99,\"tag1, tag2\",\"true\"\n";
+        $expectedHeaders = implode(',', array_map(fn($method) => 'import_export.' . $this->methodToSnake->convert($method), $methods));
+
+        $expectedCsv = $expectedHeaders . "\n"
+        . "1,\"John Doe\",john@example.com,\"2023-01-01 10:00:00\",\"2023-01-02 12:00:00\",99.99,\"tag1, tag2\",true\n";
+
+
 
         $this->assertEquals($expectedCsv, $csv);
 
         unlink($tempFilePath);
     }
 
-    private function getMethods(): array {
+    private function getMethods(): array
+    {
         return ['getId', 'getName', 'getEmail', 'getCreatedAt', 'getUpdatedAt', 'getPrice', 'getTags', 'isActive'];
     }
 
@@ -109,8 +129,8 @@ class ExporterTest extends TestCase
         $testEntity->setId(1);
         $testEntity->setName('John Doe');
         $testEntity->setEmail('john@example.com');
-        $testEntity->setCreatedAt(new \DateTime('2023-01-01 10:00:00'));
-        $testEntity->setUpdatedAt(new \DateTime('2023-01-02 12:00:00'));
+        $testEntity->setCreatedAt(new DateTime('2023-01-01 10:00:00'));
+        $testEntity->setUpdatedAt(new DateTime('2023-01-02 12:00:00'));
         $testEntity->setPrice(99.99);
         $testEntity->setTags(['tag1', 'tag2']);
         $testEntity->setActive(true);
