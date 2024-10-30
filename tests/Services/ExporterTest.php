@@ -36,11 +36,11 @@ class ExporterTest extends TestCase implements ExporterTestInterface
     #[Override]
     public function testExportToXlsxGeneratesCorrectResponse(): void
     {
-        $queryBuilder = $this->createQueryBuilder();
+        $query = $this->createQuery();
 
         $fields = ['id', 'name', 'email'];
 
-        $response = $this->exporter->exportXlsx($queryBuilder, $fields, 'export');
+        $response = $this->exporter->exportXlsx($query, $fields, 'export');
 
         $this->assertInstanceOf(StreamedResponse::class, $response);
 
@@ -70,11 +70,11 @@ class ExporterTest extends TestCase implements ExporterTestInterface
     #[Override]
     public function testExportToCsvGeneratesCorrectResponse(): void
     {
-        $queryBuilder = $this->createQueryBuilder();
+        $query = $this->createQuery();
 
         $fields = ['id', 'name', 'email'];
 
-        $response = $this->exporter->exportCsv($queryBuilder, $fields, 'export');
+        $response = $this->exporter->exportCsv($query, $fields, 'export');
 
         $this->assertInstanceOf(StreamedResponse::class, $response);
 
@@ -97,7 +97,7 @@ class ExporterTest extends TestCase implements ExporterTestInterface
         unlink($tempFilePath);
     }
 
-    private function createQueryBuilder(): QueryBuilder
+    private function createQuery(): Query
     {
         $entityManager = $this->createMock(EntityManagerInterface::class);
 
@@ -118,6 +118,7 @@ class ExporterTest extends TestCase implements ExporterTestInterface
                      ->willReturn($queryMock);
 
         /** @var QueryBuilder $queryBuilder */
-        return $queryBuilder;
+
+        return $queryBuilder->getQuery();
     }
 }

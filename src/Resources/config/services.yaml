@@ -1,5 +1,10 @@
 services:
+    PhpOffice\PhpSpreadsheet\Spreadsheet:
+        class: PhpOffice\PhpSpreadsheet\Spreadsheet
+
     SymfonyImportExportBundle\Services\Exporter:
+        arguments:
+            $spreadsheet: '@PhpOffice\PhpSpreadsheet\Spreadsheet'
         autowire: true
         autoconfigure: true
         public: true

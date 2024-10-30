@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SymfonyImportExportBundle\Services;
 
-use Doctrine\ORM\QueryBuilder;
+use Doctrine\ORM\Query;
 use InvalidArgumentException;
 use Override;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -23,11 +23,15 @@ class Exporter implements ExporterInterface
     }
 
     #[Override]
-    public function exportXlsx(QueryBuilder $queryBuilder, array $fields, string $fileName): StreamedResponse
+    public function exportXlsx(Query $query, array $fields, string $fileName): StreamedResponse
     {
-        $results = $queryBuilder->getQuery()->getArrayResult();
+        $results = $query->getArrayResult();
 
-        if ([] === $results || [] === $fields) {
+        if ([] === $results) {
+            throw new InvalidArgumentException('There are no results to export');
+        }
+
+        if ([] === $fields) {
             throw new InvalidArgumentException('Fields cannot be empty');
         }
 
@@ -56,11 +60,15 @@ class Exporter implements ExporterInterface
     }
 
     #[Override]
-    public function exportCsv(QueryBuilder $queryBuilder, array $fields, string $fileName): StreamedResponse
+    public function exportCsv(Query $query, array $fields, string $fileName): StreamedResponse
     {
-        $results = $queryBuilder->getQuery()->getArrayResult();
+        $results = $query->getArrayResult();
 
-        if ([] === $results || [] === $fields) {
+        if ([] === $results) {
+            throw new InvalidArgumentException('There are no results to export');
+        }
+
+        if ([] === $fields) {
             throw new InvalidArgumentException('Fields cannot be empty');
         }
 
