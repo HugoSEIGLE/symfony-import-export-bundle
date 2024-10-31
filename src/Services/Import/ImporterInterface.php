@@ -8,6 +8,9 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 interface ImporterInterface
 {
+    public const string XLSX = 'xlsx';
+    public const string CSV = 'csv';
+
     public function import(UploadedFile $file, string $entityClass, string $formType): void;
 
     /**

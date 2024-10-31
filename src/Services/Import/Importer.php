@@ -139,11 +139,11 @@ class Importer implements ImporterInterface
     {
         $extension = pathinfo($file->getClientOriginalName(), PATHINFO_EXTENSION);
 
-        if ('csv' === $extension) {
+        if (ImporterInterface::CSV === $extension) {
             return $this->parseCsvFile($file);
         }
 
-        if ('xlsx' === $extension) {
+        if (ImporterInterface::XLSX === $extension) {
             return $this->parseXlsxFile($file);
         }
 
