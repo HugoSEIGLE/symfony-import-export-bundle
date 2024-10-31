@@ -9,13 +9,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 interface ExporterInterface
 {
-    /**
-     * @param array<string> $methods
-     */
-    public function exportXlsx(Query $query, array $methods, string $fileName): StreamedResponse;
+    public const string XLSX = 'xlsx';
+    public const string CSV = 'csv';
 
     /**
      * @param array<string> $methods
      */
-    public function exportCsv(Query $query, array $methods, string $fileName): StreamedResponse;
+    public function export(Query $query, array $methods, string $fileName, string $fileType): StreamedResponse;
 }

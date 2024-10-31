@@ -28,7 +28,6 @@ use function is_array;
 use function is_bool;
 use function is_object;
 use function is_scalar;
-use function is_string;
 use function method_exists;
 use function sprintf;
 
@@ -44,29 +43,39 @@ class Exporter implements ExporterInterface
     ) {
     }
 
-    /**
-     * @param array<string> $methods
-     */
-    public function exportXlsx(Query $query, array $methods, string $fileName): StreamedResponse
+    public function export(Query $query, array $methods, string $fileName, string $fileType): StreamedResponse
     {
         $results = $this->getResults($query);
         $translatedHeaders = $this->getTranslatedHeaders($methods);
 
-        $sheet = $this->spreadsheet->getActiveSheet();
-        $this->writeHeadersToSheet($sheet, $translatedHeaders);
-        $this->writeValuesToSheet($sheet, $this->formatValues($results, $methods));
-
-        return $this->createStreamedResponse($fileName, 'xlsx');
+        return match ($fileType) {
+            self::XLSX => $this->exportXlsx($results, $translatedHeaders, $methods, $fileName),
+            self::CSV => $this->exportCsv($results, $translatedHeaders, $methods, $fileName),
+            default => throw new InvalidArgumentException(sprintf('Unsupported file type %s', $fileType)),
+        };
     }
 
     /**
      * @param array<string> $methods
+     * @param array<object> $results
+     * @param array<string> $translatedHeaders
      */
-    public function exportCsv(Query $query, array $methods, string $fileName): StreamedResponse
+    private function exportXlsx(array $results, array $translatedHeaders, array $methods, string $fileName): StreamedResponse
     {
-        $results = $this->getResults($query);
-        $translatedHeaders = $this->getTranslatedHeaders($methods);
+        $sheet = $this->spreadsheet->getActiveSheet();
+        $this->writeHeadersToSheet($sheet, $translatedHeaders);
+        $this->writeValuesToSheet($sheet, $this->formatValues($results, $methods));
 
+        return $this->createStreamedResponse($fileName);
+    }
+
+    /**
+     * @param array<string> $methods
+     * @param array<object> $results
+     * @param array<string> $translatedHeaders
+     */
+    private function exportCsv(array $results, array $translatedHeaders, array $methods, string $fileName): StreamedResponse
+    {
         return new StreamedResponse(function () use ($results, $translatedHeaders, $methods) {
             $handle = fopen('php://output', 'w');
             if (false === $handle) {
@@ -93,7 +102,7 @@ class Exporter implements ExporterInterface
             throw new InvalidArgumentException('Expected query result to be an array.');
         }
 
-        if (empty($results)) {
+        if ([] === $results) {
             throw new InvalidArgumentException('There are no results to export');
         }
 
@@ -132,7 +141,7 @@ class Exporter implements ExporterInterface
         }
     }
 
-    private function createStreamedResponse(string $fileName, string $format): StreamedResponse
+    private function createStreamedResponse(string $fileName): StreamedResponse
     {
         $response = new StreamedResponse(function () {
             $writer = new Xlsx($this->spreadsheet);
@@ -197,7 +206,6 @@ class Exporter implements ExporterInterface
             $value instanceof DateTimeInterface => $value->format($this->dateFormat),
             $value instanceof ArrayCollection || $value instanceof PersistentCollection => implode(', ', $value->toArray()),
             is_scalar($value) => (string) $value,
-            is_string($value) => $value,
             is_object($value) => method_exists($value, '__toString') ? (string) $value : throw new InvalidArgumentException(sprintf('Cannot cast object of class %s to string', get_class($value))),
             default => throw new InvalidArgumentException(sprintf('Cannot cast value of type %s to string', gettype($value))),
         };

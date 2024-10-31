@@ -6,7 +6,4 @@ namespace SymfonyImportExportBundle\Tests\Services\Import;
 
 interface ImporterTestInterface
 {
-    public function testImportXlsxFile(): void;
-
-    public function testImportCsvFile(): void;
 }

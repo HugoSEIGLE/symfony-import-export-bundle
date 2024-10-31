@@ -48,7 +48,7 @@ class ExporterTest extends TestCase
     {
         $query = $this->createQuery();
         $methods = $this->getMethods();
-        $response = $this->exporter->exportXlsx($query, $methods, 'export');
+        $response = $this->exporter->export($query, $methods, 'test', ExporterInterface::XLSX);
 
         $this->assertInstanceOf(StreamedResponse::class, $response);
 
@@ -86,7 +86,7 @@ class ExporterTest extends TestCase
     {
         $query = $this->createQuery();
         $methods = $this->getMethods();
-        $response = $this->exporter->exportCsv($query, $methods, 'export');
+        $response = $this->exporter->export($query, $methods, 'export', ExporterInterface::CSV);
 
         $this->assertInstanceOf(StreamedResponse::class, $response);
 
