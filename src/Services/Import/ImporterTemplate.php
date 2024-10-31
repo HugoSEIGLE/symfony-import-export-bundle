@@ -18,7 +18,7 @@ use function fputcsv;
 use function in_array;
 use function is_array;
 
-class Importer implements ImporterInterface
+class ImporterTemplate implements ImporterTemplateInterface
 {
     public function __construct(
         private readonly ParameterBagInterface $parameterBag,

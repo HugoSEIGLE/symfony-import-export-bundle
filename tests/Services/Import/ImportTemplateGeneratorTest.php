@@ -17,12 +17,12 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use SymfonyImportExportBundle\Services\Import\Importer;
-use SymfonyImportExportBundle\Services\Import\ImporterInterface;
+use SymfonyImportExportBundle\Services\Import\ImporterTemplate;
+use SymfonyImportExportBundle\Services\Import\ImporterTemplateInterface;
 
 class ImportTemplateGeneratorTest extends TestCase implements ImportTemplateGeneratorTestInterface
 {
-    private ImporterInterface $importer;
+    private ImporterTemplateInterface $importer;
     private ParameterBagInterface $parameterBag;
 
     protected function setUp(): void
@@ -34,7 +34,7 @@ class ImportTemplateGeneratorTest extends TestCase implements ImportTemplateGene
             ],
         ]);
 
-        $this->importer = new Importer($this->parameterBag);
+        $this->importer = new ImporterTemplate($this->parameterBag);
     }
 
     public function testGetImportTemplateXlsx(): void

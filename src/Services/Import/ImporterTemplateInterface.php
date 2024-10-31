@@ -6,7 +6,7 @@ namespace SymfonyImportExportBundle\Services\Import;
 
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-interface ImporterInterface
+interface ImporterTemplateInterface
 {
     public const string XLSX = 'xlsx';
     public const string CSV = 'csv';
