@@ -1,0 +1,9 @@
+# phpstan.neon
+parameters:
+    level: max
+    paths:
+        - src
+    bootstrapFiles:
+        - vendor/autoload.php
+    excludePaths:
+        - tests/*

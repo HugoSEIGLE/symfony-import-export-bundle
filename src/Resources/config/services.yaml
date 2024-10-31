@@ -1,8 +1,19 @@
 services:
-    SymfonyImportExportBundle\Services\Exporter:
+    PhpOffice\PhpSpreadsheet\Spreadsheet:
+        class: PhpOffice\PhpSpreadsheet\Spreadsheet
+    SymfonyImportExportBundle\Services\MethodToSnakeInterface:
+        class: SymfonyImportExportBundle\Services\MethodToSnake
+
+    SymfonyImportExportBundle\Services\Export\Exporter:
+        arguments:
+            $spreadsheet: '@PhpOffice\PhpSpreadsheet\Spreadsheet'
+            $methodToSnake: '@SymfonyImportExportBundle\Services\MethodToSnakeInterface'
+            $dateFormat: '%import_export.date_format%'
+            $boolTrue: '%import_export.bool_true%'
+            $boolFalse: '%import_export.bool_false%'
         autowire: true
         autoconfigure: true
         public: true
 
-    SymfonyImportExportBundle\Services\ExporterInterface:
-        alias: SymfonyImportExportBundle\Services\Exporter
+    SymfonyImportExportBundle\Services\Export\ExporterInterface:
+        alias: SymfonyImportExportBundle\Services\Export\Exporter
