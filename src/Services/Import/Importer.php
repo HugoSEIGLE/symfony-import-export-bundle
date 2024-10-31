@@ -102,7 +102,7 @@ class Importer implements ImporterInterface
                     ++$this->summary['inserted'];
                 }
 
-                if ($allowDelete && isset($rowData['deleted']) && $this->boolTrue === $rowData[$this->translator->trans('import_export.deleted', [], 'messages')]) {
+                if ($allowDelete && isset($rowData['deleted']) && $this->boolTrue === $rowData[$this->translator->trans('import_export.deleted', [], 'messages') ? '' : 'deleted']) {
                     $this->entityManager->remove($entity);
                     ++$this->summary['deleted'];
                 }

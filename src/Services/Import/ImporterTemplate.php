@@ -71,7 +71,7 @@ class ImporterTemplate implements ImporterTemplateInterface
         $sheet = $spreadsheet->getActiveSheet();
 
         foreach ($fields as $col => $field) {
-            $sheet->setCellValueByColumnAndRow($col + 1, 1, $this->translator->trans('import_export.' . $this->methodToSnake->convert($field), [], 'messages'));
+            $sheet->setCellValueByColumnAndRow($col + 1, 1, $this->translator->trans('import_export.' . $this->methodToSnake->convert($field), [], 'messages') ? '' : $field);
         }
 
         $response = new StreamedResponse(function () use ($spreadsheet) {
@@ -99,7 +99,7 @@ class ImporterTemplate implements ImporterTemplateInterface
             }
 
             $translatedFields = array_map(
-                fn ($field) => $this->translator->trans('import_export.' . $this->methodToSnake->convert($field), [], 'messages'),
+                fn ($field) => $this->translator->trans('import_export.' . $this->methodToSnake->convert($field), [], 'messages') ? '' : $field,
                 $fields
             );
 

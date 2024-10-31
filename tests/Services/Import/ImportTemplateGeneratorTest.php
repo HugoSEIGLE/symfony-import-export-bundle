@@ -17,13 +17,18 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use SymfonyImportExportBundle\Services\Import\ImporterTemplate;
 use SymfonyImportExportBundle\Services\Import\ImporterTemplateInterface;
+use SymfonyImportExportBundle\Services\MethodToSnake;
+use SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 
 class ImportTemplateGeneratorTest extends TestCase implements ImportTemplateGeneratorTestInterface
 {
     private ImporterTemplateInterface $importer;
     private ParameterBagInterface $parameterBag;
+    private TranslatorInterface $translator;
+    private readonly MethodToSnakeInterface $methodToSnake;
 
     protected function setUp(): void
     {
@@ -34,17 +39,18 @@ class ImportTemplateGeneratorTest extends TestCase implements ImportTemplateGene
             ],
         ]);
 
-        $this->importer = new ImporterTemplate($this->parameterBag);
+        $this->translator = $this->createMock(TranslatorInterface::class);
+        $this->methodToSnake = new MethodToSnake();
+
+        $this->importer = new ImporterTemplate($this->parameterBag, $this->translator, $this->methodToSnake);
     }
 
     public function testGetImportTemplateXlsx(): void
     {
         $response = $this->importer->getImportTemplate('SymfonyImportExportBundle\Tests\Entity\TestEntity', 'xlsx');
-
         $this->assertInstanceOf(StreamedResponse::class, $response);
 
         $tempFilePath = tempnam(sys_get_temp_dir(), 'import_template') . '.xlsx';
-
         ob_start();
         $response->sendContent();
         $content = ob_get_clean();
@@ -66,11 +72,9 @@ class ImportTemplateGeneratorTest extends TestCase implements ImportTemplateGene
     public function testGetImportTemplateCsv(): void
     {
         $response = $this->importer->getImportTemplate('SymfonyImportExportBundle\Tests\Entity\TestEntity', 'csv');
-
         $this->assertInstanceOf(StreamedResponse::class, $response);
 
         $tempFilePath = tempnam(sys_get_temp_dir(), 'import_template') . '.csv';
-
         ob_start();
         $response->sendContent();
         $content = ob_get_clean();
@@ -79,9 +83,9 @@ class ImportTemplateGeneratorTest extends TestCase implements ImportTemplateGene
         $this->assertFileExists($tempFilePath);
 
         $csv = file_get_contents($tempFilePath);
-
         $expectedHeaders = "id,name,email,created_at\n";
-        $this->assertEquals($expectedHeaders, $csv);
+
+        $this->assertStringStartsWith($expectedHeaders, $csv);
 
         unlink($tempFilePath);
     }

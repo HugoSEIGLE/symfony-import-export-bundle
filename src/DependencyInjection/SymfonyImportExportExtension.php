@@ -29,4 +29,14 @@ class SymfonyImportExportExtension extends Extension
     {
         return 'import_export';
     }
+
+    public function getXsdValidationBasePath(): string
+    {
+        return 'https://raw.githubusercontent.com/HugoSEIGLE/symfony-import-export-bundle/refs/heads/main/src/Resources/config/schema';
+    }
+
+    public function getNamespace(): string
+    {
+        return $this->getXsdValidationBasePath();
+    }
 }
