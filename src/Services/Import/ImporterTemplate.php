@@ -52,6 +52,10 @@ class ImporterTemplate implements ImporterTemplateInterface
 
         $fields = $importersConfig[$class]['fields'];
 
+        if ($importersConfig[$class]['allow_delete']) {
+            $fields[] = 'deleted';
+        }
+
         return match ($fileType) {
             self::XLSX => $this->getXlsxTemplate($fields),
             self::CSV => $this->getCsvTemplate($fields),

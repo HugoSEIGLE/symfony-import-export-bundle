@@ -102,7 +102,7 @@ class Importer implements ImporterInterface
                     ++$this->summary['inserted'];
                 }
 
-                if ($allowDelete && isset($rowData['deleted']) && $this->boolTrue === $rowData['deleted']) {
+                if ($allowDelete && isset($rowData['deleted']) && $this->boolTrue === $rowData[$this->translator->trans('import_export.deleted', [], 'messages')]) {
                     $this->entityManager->remove($entity);
                     ++$this->summary['deleted'];
                 }
@@ -228,7 +228,7 @@ class Importer implements ImporterInterface
         $errors = [];
         foreach ($form->getErrors(true) as $error) {
             /** @var \Symfony\Component\Form\FormError $error */
-            $errors[] = $this->translator->trans($error->getMessage());
+            $errors[] = $this->translator->trans($error->getMessage(), $error->getMessageParameters(), 'validators');
         }
 
         return $errors;
