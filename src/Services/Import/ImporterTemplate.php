@@ -36,7 +36,7 @@ class ImporterTemplate implements ImporterTemplateInterface
             throw new InvalidArgumentException('Class must be an object.');
         }
 
-        if (!in_array($fileType, [self::XLSX, self::CSV])) {
+        if (!in_array($fileType, [ImporterInterface::XLSX, ImporterInterface::CSV])) {
             throw new InvalidArgumentException('Invalid file type.');
         }
 
@@ -57,8 +57,8 @@ class ImporterTemplate implements ImporterTemplateInterface
         }
 
         return match ($fileType) {
-            self::XLSX => $this->getXlsxTemplate($fields),
-            self::CSV => $this->getCsvTemplate($fields),
+            ImporterInterface::XLSX => $this->getXlsxTemplate($fields),
+            ImporterInterface::CSV => $this->getCsvTemplate($fields),
         };
     }
 
