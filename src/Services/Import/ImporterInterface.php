@@ -11,7 +11,13 @@ interface ImporterInterface
     public const string XLSX = 'xlsx';
     public const string CSV = 'csv';
 
-    public function import(UploadedFile $file, string $entityClass, string $formType): void;
+    /**
+     * @param class-string $entityClass
+     * @param class-string $formType
+     *
+     * @return array<mixed>
+     */
+    public function import(UploadedFile $file, string $entityClass, string $formType): array;
 
     /**
      * @return array<string>

@@ -14,9 +14,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use SymfonyImportExportBundle\Services\Import\Importer;
 use SymfonyImportExportBundle\Services\Import\ImporterInterface;
 
-use SymfonyImportExportBundle\Tests\Entity\TestEntity;
-use SymfonyImportExportBundle\Tests\Repository\TestRepository;
-
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
@@ -37,11 +34,11 @@ class ImporterTest extends TestCase
         $this->translator = $this->createMock(TranslatorInterface::class);
         $this->parameterBag = $this->createMock(ParameterBagInterface::class);
 
-        $this->parameterBag->method('get')->with('symfony_import_export.importers')->willReturn([
+        $this->parameterBag->method('get')->with('import_export.importers')->willReturn([
             'SymfonyImportExportBundle\Tests\Entity\TestEntity' => [
                 'fields' => ['id', 'name', 'email', 'created_at'],
                 'allow_delete' => true,
-                'unique_fields' => ['id']
+                'unique_fields' => ['id'],
             ],
         ]);
 
@@ -81,7 +78,7 @@ class ImporterTest extends TestCase
         $this->importer->import($file, 'SymfonyImportExportBundle\Tests\Entity\TestEntity', 'App\Form\TestFormType');
 
         $this->assertFalse($this->importer->isValid());
-        $this->assertNotEmpty($this->importer->getErrors());
+        $this->assertNotEmpty($this->importer->getErrors(), "Expected errors for invalid data.");
     }
 
     public function testAllowDeleteWithDeletedField(): void
@@ -107,14 +104,14 @@ class ImporterTest extends TestCase
         $existingEntity = new \stdClass();
         $existingEntity->id = 1;
 
-        $repositoryMock = $this->createMock(TestRepository::class);
+        $repositoryMock = $this->createMock(EntityRepository::class);
         $repositoryMock->method('findOneBy')->willReturn($existingEntity);
 
         $this->entityManager->method('getRepository')->willReturn($repositoryMock);
 
         $formMock = $this->createMock(FormInterface::class);
         $formMock->method('isValid')->willReturn(true);
-        $formMock->method('getData')->willReturn($existingEntity);  // Utilise l'entité existante
+        $formMock->method('getData')->willReturn($existingEntity);
 
         $this->formFactory->method('create')->willReturn($formMock);
 
