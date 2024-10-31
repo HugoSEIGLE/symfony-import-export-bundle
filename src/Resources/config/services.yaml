@@ -15,5 +15,12 @@ services:
         autoconfigure: true
         public: true
 
+    SymfonyImportExportBundle\Services\Import\Importer:
+        arguments:
+            $boolTrue: '%import_export.bool_true%'
+        autowire: true
+        autoconfigure: true
+        public: true
+
     SymfonyImportExportBundle\Services\Export\ExporterInterface:
         alias: SymfonyImportExportBundle\Services\Export\Exporter
