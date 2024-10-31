@@ -31,6 +31,18 @@ class Configuration implements ConfigurationInterface
                         ->defaultValue('false')
                         ->info('Value used for false.')
                     ->end()
+                    ->arrayNode('importers')
+                        ->useAttributeAsKey('class')
+                        ->arrayPrototype()
+                            ->children()
+                                ->arrayNode('fields')
+                                    ->scalarPrototype()
+                                        ->info('List of fields to export for the given class.')
+                                    ->end()
+                                ->end()
+                            ->end()
+                        ->end()
+                    ->end()
                 ->end();
         }
 
