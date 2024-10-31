@@ -9,8 +9,11 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 
 use function array_key_exists;
+use function array_map;
 use function class_exists;
 use function fclose;
 use function fopen;
@@ -22,6 +25,8 @@ class ImporterTemplate implements ImporterTemplateInterface
 {
     public function __construct(
         private readonly ParameterBagInterface $parameterBag,
+        private readonly TranslatorInterface $translator,
+        private readonly MethodToSnakeInterface $methodToSnake,
     ) {
     }
 
@@ -35,7 +40,7 @@ class ImporterTemplate implements ImporterTemplateInterface
             throw new InvalidArgumentException('Invalid file type.');
         }
 
-        $importersConfig = $this->parameterBag->get('symfony_import_export.importers');
+        $importersConfig = $this->parameterBag->get('import_export.importers');
 
         if (!is_array($importersConfig)) {
             throw new InvalidArgumentException('Importers configuration not found.');
@@ -62,7 +67,7 @@ class ImporterTemplate implements ImporterTemplateInterface
         $sheet = $spreadsheet->getActiveSheet();
 
         foreach ($fields as $col => $field) {
-            $sheet->setCellValueByColumnAndRow($col + 1, 1, $field);
+            $sheet->setCellValueByColumnAndRow($col + 1, 1, $this->translator->trans('import_export.' . $this->methodToSnake->convert($field), [], 'messages'));
         }
 
         $response = new StreamedResponse(function () use ($spreadsheet) {
@@ -89,7 +94,12 @@ class ImporterTemplate implements ImporterTemplateInterface
                 return;
             }
 
-            fputcsv($handle, $fields);
+            $translatedFields = array_map(
+                fn ($field) => $this->translator->trans('import_export.' . $this->methodToSnake->convert($field), [], 'messages'),
+                $fields
+            );
+
+            fputcsv($handle, $translatedFields);
 
             fclose($handle);
         });

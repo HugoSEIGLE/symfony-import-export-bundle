@@ -4,6 +4,9 @@ services:
     SymfonyImportExportBundle\Services\MethodToSnakeInterface:
         class: SymfonyImportExportBundle\Services\MethodToSnake
 
+    SymfonyImportExportBundle\Services\Export\ExporterInterface:
+        alias: SymfonyImportExportBundle\Services\Export\Exporter
+
     SymfonyImportExportBundle\Services\Export\Exporter:
         arguments:
             $spreadsheet: '@PhpOffice\PhpSpreadsheet\Spreadsheet'
@@ -15,6 +18,9 @@ services:
         autoconfigure: true
         public: true
 
+    SymfonyImportExportBundle\Services\Import\ImporterInterface:
+        alias: SymfonyImportExportBundle\Services\Import\Importer
+
     SymfonyImportExportBundle\Services\Import\Importer:
         arguments:
             $boolTrue: '%import_export.bool_true%'
@@ -22,5 +28,10 @@ services:
         autoconfigure: true
         public: true
 
-    SymfonyImportExportBundle\Services\Export\ExporterInterface:
-        alias: SymfonyImportExportBundle\Services\Export\Exporter
+    SymfonyImportExportBundle\Services\Import\ImporterTemplateInterface:
+        alias: SymfonyImportExportBundle\Services\Import\ImporterTemplate
+
+    SymfonyImportExportBundle\Services\Import\ImporterTemplate:
+        autowire: true
+        autoconfigure: true
+        public: true

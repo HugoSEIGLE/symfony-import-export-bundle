@@ -104,28 +104,22 @@ class ImporterTest extends TestCase
     {
         $file = $this->createTestFile("id,name,email,created_at,deleted\n1,John Updated,john_updated@example.com,2023-01-01,false\n");
 
-        // Mock de l'entité existante pour simuler la mise à jour
         $existingEntity = new \stdClass();
         $existingEntity->id = 1;
 
-        // Crée un mock pour EntityRepository
         $repositoryMock = $this->createMock(TestRepository::class);
         $repositoryMock->method('findOneBy')->willReturn($existingEntity);
 
-        // Configure le EntityManager pour retourner le mock du repository
         $this->entityManager->method('getRepository')->willReturn($repositoryMock);
 
-        // Mock du formulaire pour valider et retourner l’entité modifiée
         $formMock = $this->createMock(FormInterface::class);
         $formMock->method('isValid')->willReturn(true);
         $formMock->method('getData')->willReturn($existingEntity);  // Utilise l'entité existante
 
         $this->formFactory->method('create')->willReturn($formMock);
 
-        // Exécuter l'import
         $this->importer->import($file, 'SymfonyImportExportBundle\Tests\Entity\TestEntity', 'App\Form\TestFormType');
 
-        // Vérification du récapitulatif
         $summary = $this->importer->getSummary();
         $this->assertEquals(1, $summary['updated'], "Expected one item to be updated.");
     }

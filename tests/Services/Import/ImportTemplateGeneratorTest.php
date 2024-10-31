@@ -28,7 +28,7 @@ class ImportTemplateGeneratorTest extends TestCase implements ImportTemplateGene
     protected function setUp(): void
     {
         $this->parameterBag = $this->createMock(ParameterBagInterface::class);
-        $this->parameterBag->method('get')->with('symfony_import_export.importers')->willReturn([
+        $this->parameterBag->method('get')->with('import_export.importers')->willReturn([
             'SymfonyImportExportBundle\Tests\Entity\TestEntity' => [
                 'fields' => ['id', 'name', 'email', 'created_at'],
             ],

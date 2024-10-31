@@ -84,8 +84,8 @@ class Exporter implements ExporterInterface
 
             fputcsv($handle, $translatedHeaders);
 
-            foreach ($this->formatValues($results, $methods) as $value) {
-                fputcsv($handle, $value);
+            foreach ($this->formatValues($results, $methods) as $row) {
+                fputcsv($handle, $row);
             }
 
             fclose($handle);
