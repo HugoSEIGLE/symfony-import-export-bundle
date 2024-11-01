@@ -3,7 +3,7 @@
     "description": "Symfony bundle for importing and exporting entities",
     "license": "MIT",
     "type": "symfony-bundle",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": [
         {
             "name": "Hugo SEIGLE",
