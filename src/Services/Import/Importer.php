@@ -57,10 +57,8 @@ class Importer implements ImporterInterface
     /**
      * @param class-string $entityClass
      * @param class-string $formType
-     *
-     * @return array<object>
      */
-    public function import(UploadedFile $file, string $entityClass, string $formType): array
+    public function import(UploadedFile $file, string $entityClass, string $formType): void
     {
         if (!class_exists($entityClass)) {
             throw new InvalidArgumentException($this->translator->trans('import_export.invalid_entity', [], 'messages'));
@@ -137,8 +135,6 @@ class Importer implements ImporterInterface
                 $this->errors = $this->collectFormErrors($form, $rowIndex + 2);
             }
         }
-
-        return $results;
     }
 
     /**

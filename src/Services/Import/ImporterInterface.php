@@ -14,10 +14,8 @@ interface ImporterInterface
     /**
      * @param class-string $entityClass
      * @param class-string $formType
-     *
-     * @return array<mixed>
      */
-    public function import(UploadedFile $file, string $entityClass, string $formType): array;
+    public function import(UploadedFile $file, string $entityClass, string $formType): void;
 
     /**
      * @return array<string>
