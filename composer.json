@@ -3,7 +3,7 @@
     "description": "Symfony bundle for importing and exporting entities",
     "license": "MIT",
     "type": "symfony-bundle",
-    "version": "1.0.0",
+    "version": "1.0.0-beta",
     "authors": [
         {
             "name": "Hugo SEIGLE",
@@ -11,7 +11,7 @@
         }
     ],
     "require": {
-        "php": ">=8.1",
+        "php": ">=8.3",
         "doctrine/orm": "^3.3",
         "phpoffice/phpspreadsheet": "^1.23",
         "symfony/form": "^7.1",
