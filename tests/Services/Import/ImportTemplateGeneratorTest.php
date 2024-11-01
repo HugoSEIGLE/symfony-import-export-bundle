@@ -18,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use SymfonyImportExportBundle\Services\Import\ImporterInterface;
 use SymfonyImportExportBundle\Services\Import\ImporterTemplate;
 use SymfonyImportExportBundle\Services\Import\ImporterTemplateInterface;
 use SymfonyImportExportBundle\Services\MethodToSnake;
@@ -47,7 +48,7 @@ class ImportTemplateGeneratorTest extends TestCase implements ImportTemplateGene
 
     public function testGetImportTemplateXlsx(): void
     {
-        $response = $this->importer->getImportTemplate('SymfonyImportExportBundle\Tests\Entity\TestEntity', 'xlsx');
+        $response = $this->importer->getImportTemplate('SymfonyImportExportBundle\Tests\Entity\TestEntity', ImporterInterface::XLSX);
         $this->assertInstanceOf(StreamedResponse::class, $response);
 
         $tempFilePath = tempnam(sys_get_temp_dir(), 'import_template') . '.xlsx';
@@ -71,7 +72,7 @@ class ImportTemplateGeneratorTest extends TestCase implements ImportTemplateGene
 
     public function testGetImportTemplateCsv(): void
     {
-        $response = $this->importer->getImportTemplate('SymfonyImportExportBundle\Tests\Entity\TestEntity', 'csv');
+        $response = $this->importer->getImportTemplate('SymfonyImportExportBundle\Tests\Entity\TestEntity', ImporterInterface::CSV);
         $this->assertInstanceOf(StreamedResponse::class, $response);
 
         $tempFilePath = tempnam(sys_get_temp_dir(), 'import_template') . '.csv';

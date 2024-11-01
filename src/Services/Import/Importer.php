@@ -67,7 +67,7 @@ class Importer implements ImporterInterface
         }
 
         $importers = $this->parameterBag->get('import_export.importers');
-        if (!is_array($importers) || !isset($importers[$entityClass])) {
+        if (!is_array($importers) || !array_key_exists($entityClass, $importers)) {
             throw new InvalidArgumentException(sprintf('No import configuration found for entity %s.', $entityClass));
         }
         $config = (array) $importers[$entityClass];
@@ -365,7 +365,7 @@ class Importer implements ImporterInterface
 
     public function isValid(): bool
     {
-        return empty($this->errors);
+        return [] === $this->errors;
     }
 
     public function getSummary(): array
