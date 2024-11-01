@@ -27,7 +27,7 @@ interface ImporterInterface
     public function isValid(): bool;
 
     /**
-     * @return array<string>
+     * @return array<mixed>
      */
     public function getSummary(): array;
 }

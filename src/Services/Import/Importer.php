@@ -119,12 +119,14 @@ class Importer implements ImporterInterface
                     array_map(static fn ($value) => is_scalar($value) || null === $value ? strval($value) : '', $rowData)
                 );
 
-                if (null !== $existingEntity && $this->boolTrue === $deleted) {
-                    $this->deleteEntity($existingEntity);
-                } elseif (null === $existingEntity && $this->boolTrue === $deleted) {
+                if (null !== $existingEntity) {
+                    if ($this->boolTrue === $deleted) {
+                        $this->deleteEntity($existingEntity);
+                    } else {
+                        $this->updateEntity($entity, $existingEntity, $config['fields']);
+                    }
+                } elseif ($this->boolTrue === $deleted) {
                     $this->addError($rowIndex + 2, 'import_export.deleted_entity_not_found');
-                } elseif (null !== $existingEntity && $this->boolTrue !== $deleted) {
-                    $this->updateEntity($entity, $existingEntity, $config['fields']);
                 } else {
                     $this->persistEntity($entity);
                 }

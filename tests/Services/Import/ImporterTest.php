@@ -5,19 +5,20 @@ declare(strict_types=1);
 namespace SymfonyImportExportBundle\Tests\Services\Import;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\EntityRepository;
+use function file_put_contents;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Form\FormFactoryInterface;
+
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use SymfonyImportExportBundle\Services\Import\Importer;
 use SymfonyImportExportBundle\Services\Import\ImporterInterface;
-
-use function sys_get_temp_dir;
-use function tempnam;
-use function unlink;
-use function file_put_contents;
 
 class ImporterTest extends TestCase
 {
@@ -52,7 +53,7 @@ class ImporterTest extends TestCase
 
     public function testImportValidData(): void
     {
-        $file = $this->createTestFile("id,name,email,created_at\n1,John Doe,john@example.com,2023-01-01\n");
+        $file = $this->createTestFile("id,name,email,created_at\n1,John Doe,john@example.com,2023-01-01,false\n");
 
         $formMock = $this->createMock(FormInterface::class);
         $formMock->method('isValid')->willReturn(true);
@@ -63,7 +64,7 @@ class ImporterTest extends TestCase
         $this->importer->import($file, 'SymfonyImportExportBundle\Tests\Entity\TestEntity', 'App\Form\TestFormType');
 
         $summary = $this->importer->getSummary();
-        $this->assertEquals(1, $summary['inserted'], "Expected one item to be inserted.");
+        $this->assertEquals(1, count($summary['created']), "Expected one item to be inserted.");
     }
 
     public function testImportInvalidData(): void
@@ -85,6 +86,14 @@ class ImporterTest extends TestCase
     {
         $file = $this->createTestFile("id,name,email,created_at,deleted\n1,John Doe,john@example.com,2023-01-01,true\n");
 
+        $existingEntity = new \stdClass();
+        $existingEntity->id = 1;
+
+        $repositoryMock = $this->createMock(EntityRepository::class);
+        $repositoryMock->method('findOneBy')->willReturn($existingEntity);
+
+        $this->entityManager->method('getRepository')->willReturn($repositoryMock);
+
         $formMock = $this->createMock(FormInterface::class);
         $formMock->method('isValid')->willReturn(true);
         $formMock->method('getData')->willReturn(new \stdClass());
@@ -94,7 +103,7 @@ class ImporterTest extends TestCase
         $this->importer->import($file, 'SymfonyImportExportBundle\Tests\Entity\TestEntity', 'App\Form\TestFormType');
 
         $summary = $this->importer->getSummary();
-        $this->assertEquals(1, $summary['deleted'], "Expected one item to be deleted.");
+        $this->assertEquals(1, count($summary['deleted']), "Expected one item to be deleted.");
     }
 
     public function testUpdateExistingEntity(): void
@@ -118,7 +127,7 @@ class ImporterTest extends TestCase
         $this->importer->import($file, 'SymfonyImportExportBundle\Tests\Entity\TestEntity', 'App\Form\TestFormType');
 
         $summary = $this->importer->getSummary();
-        $this->assertEquals(1, $summary['updated'], "Expected one item to be updated.");
+        $this->assertEquals(1, count($summary['updated']), "Expected one item to be updated.");
     }
 
     private function createTestFile(string $content): UploadedFile
