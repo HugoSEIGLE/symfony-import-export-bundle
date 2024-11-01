@@ -24,6 +24,7 @@ use function explode;
 use function fclose;
 use function fgetcsv;
 use function fopen;
+use function get_class;
 use function is_array;
 use function is_object;
 use function is_scalar;
@@ -41,8 +42,7 @@ class Importer implements ImporterInterface
     /** @var array<string> */
     private array $errors = [];
 
-    /** @var array<string, int> */
-    private array $summary = ['inserted' => 0, 'updated' => 0, 'deleted' => 0];
+    private array $summary = ['created' => [], 'updated' => [], 'deleted' => []];
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -95,6 +95,10 @@ class Importer implements ImporterInterface
 
             $rowData = $this->formatRowData($rowData, $entityClass, $config);
 
+            if ($this->isEmptyRow($rowData)) {
+                continue;
+            }
+
             $deleted = $rowData['deleted'] ?? false;
             unset($rowData['deleted']);
 
@@ -103,6 +107,7 @@ class Importer implements ImporterInterface
 
             if ($form->isValid()) {
                 $entity = $form->getData();
+
                 if (!is_object($entity)) {
                     $this->addError($rowIndex + 2, 'import_export.invalid_entity_data');
                     continue;
@@ -113,13 +118,16 @@ class Importer implements ImporterInterface
                     $uniqueFields,
                     array_map(static fn ($value) => is_scalar($value) || null === $value ? strval($value) : '', $rowData)
                 );
-                if (null !== $existingEntity && true === $deleted) {
-                    $this->entityManager->remove($existingEntity);
-                    ++$this->summary['deleted'];
-                    continue;
-                }
 
-                $this->persistOrUpdateEntity($entity, $existingEntity);
+                if (null !== $existingEntity && $this->boolTrue === $deleted) {
+                    $this->deleteEntity($existingEntity);
+                } elseif (null === $existingEntity && $this->boolTrue === $deleted) {
+                    $this->addError($rowIndex + 2, 'import_export.deleted_entity_not_found');
+                } elseif (null !== $existingEntity && $this->boolTrue !== $deleted) {
+                    $this->updateEntity($entity, $existingEntity, $config['fields']);
+                } else {
+                    $this->persistEntity($entity);
+                }
 
                 $results[] = $entity;
             } else {
@@ -128,6 +136,20 @@ class Importer implements ImporterInterface
         }
 
         return $results;
+    }
+
+    /**
+     * @param array<string, string> $rowData
+     */
+    private function isEmptyRow(array $rowData): bool
+    {
+        foreach ($rowData as $value) {
+            if ('' !== $value && false !== $value && [] !== $value && null !== $value) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -163,20 +185,30 @@ class Importer implements ImporterInterface
         foreach ($rowData as $field => &$value) {
             $type = $metadata->getTypeOfField($field);
 
-            if ('boolean' === $type) {
-                $value = strtolower(trim((string) $value)) === strtolower($this->boolTrue) ? true : false;
-            } elseif ('datetime' === $type && is_string($value)) {
-                $dateFormat = $this->parameterBag->get('import_export.date_format');
-                if (!is_string($dateFormat)) {
-                    $this->errors[] = $this->translator->trans('import_export.invalid_date_format', [], 'messages');
-                    continue;
-                }
-                $value = DateTime::createFromFormat($dateFormat, $value) ?: null;
-                if (!$value) {
-                    $this->errors[] = $this->translator->trans('import_export.invalid_datetime', ['%field%' => $field], 'messages');
-                }
-            } elseif ($metadata->hasAssociation($field)) {
-                $value = $this->resolveEntityRelation($value, $metadata->isCollectionValuedAssociation($field));
+            switch ($type) {
+                case 'boolean':
+                    $value = strtolower(trim((string) $value)) === strtolower($this->boolTrue);
+                    break;
+
+                case 'datetime':
+                    if (is_string($value)) {
+                        $dateFormat = $this->parameterBag->get('import_export.date_format');
+                        if (!is_string($dateFormat)) {
+                            $this->errors[] = $this->translator->trans('import_export.invalid_date_format', [], 'messages');
+                            continue 2;
+                        }
+                        $value = DateTime::createFromFormat($dateFormat, $value) ?: null;
+                        if (!$value) {
+                            $this->errors[] = $this->translator->trans('import_export.invalid_datetime', ['%field%' => $field], 'messages');
+                        }
+                    }
+                    break;
+
+                default:
+                    if ($metadata->hasAssociation($field)) {
+                        $value = $this->resolveEntityRelation($value, $metadata->isCollectionValuedAssociation($field));
+                    }
+                    break;
             }
         }
 
@@ -185,32 +217,46 @@ class Importer implements ImporterInterface
 
     private function resolveEntityRelation(string $value, bool $isCollection): mixed
     {
-        if ($isCollection) {
+        if (true === $isCollection) {
             if ('' === $value) {
                 return [];
             }
 
-            return explode(', ', trim($value));
+            return array_map('trim', explode(',', $value));
         }
 
-        $relatedEntity = $value;
-        $this->errors[] = $this->translator->trans('import_export.missing_related_entity', ['%id%' => $value], 'messages');
+        if ('' === $value) {
+            return null;
+        }
 
-        return $relatedEntity;
+        return $value;
     }
 
-    private function persistOrUpdateEntity(object $entity, ?object $existingEntity): void
+    private function persistEntity(object $entity): void
     {
-        if (null !== $existingEntity) {
-            $this->entityManager->remove($existingEntity);
-            $this->entityManager->flush();
+        $this->summary['created'][] = $entity;
+    }
 
-            $this->entityManager->persist($entity);
-            ++$this->summary['updated'];
-        } else {
-            $this->entityManager->persist($entity);
-            ++$this->summary['inserted'];
+    /**
+     * @param array<string> $fields
+     */
+    private function updateEntity(object $entity, object $existingEntity, array $fields): void
+    {
+        $metadata = $this->entityManager->getClassMetadata(get_class($existingEntity));
+
+        foreach ($fields as $field) {
+            if ($metadata->hasField($field) || $metadata->hasAssociation($field)) {
+                $value = $metadata->getFieldValue($entity, $field);
+                $metadata->setFieldValue($existingEntity, $field, $value);
+            }
         }
+
+        $this->summary['updated'][] = $existingEntity;
+    }
+
+    private function deleteEntity(object $entity): void
+    {
+        $this->summary['deleted'][] = $entity;
     }
 
     /**
@@ -321,6 +367,6 @@ class Importer implements ImporterInterface
 
     public function getSummary(): array
     {
-        return array_map('strval', $this->summary);
+        return $this->summary;
     }
 }
