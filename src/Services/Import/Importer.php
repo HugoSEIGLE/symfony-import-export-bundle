@@ -42,6 +42,7 @@ class Importer implements ImporterInterface
     /** @var array<string> */
     private array $errors = [];
 
+    /** @var array{'created': array<int, object>, 'updated': array<int, object>, 'deleted': array<int, object>} */
     private array $summary = ['created' => [], 'updated' => [], 'deleted' => []];
 
     public function __construct(
@@ -141,7 +142,7 @@ class Importer implements ImporterInterface
     }
 
     /**
-     * @param array<string, string> $rowData
+     * @param array<string, mixed> $rowData
      */
     private function isEmptyRow(array $rowData): bool
     {
