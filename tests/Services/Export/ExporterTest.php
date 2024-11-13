@@ -13,10 +13,11 @@ use function ob_start;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PHPUnit\Framework\TestCase;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use SymfonyImportExportBundle\Services\Export\Exporter;
@@ -67,7 +68,8 @@ class ExporterTest extends TestCase
 
         foreach ($methods as $col => $method) {
             $expectedHeader = 'import_export.' . $this->methodToSnake->convert($method);
-            $this->assertEquals($expectedHeader, $sheet->getCellByColumnAndRow($col + 1, 1)->getValue());
+            $cell = Coordinate::stringFromColumnIndex($col + 1) . '1';
+            $this->assertEquals($expectedHeader, $sheet->getCell($cell)->getValue());
         }
 
         $this->assertEquals(1, $sheet->getCell('A2')->getValue());

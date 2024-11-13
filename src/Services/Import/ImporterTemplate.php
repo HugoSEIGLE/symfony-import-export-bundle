@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SymfonyImportExportBundle\Services\Import;
 
 use InvalidArgumentException;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -72,7 +73,8 @@ class ImporterTemplate implements ImporterTemplateInterface
 
         foreach ($fields as $col => $field) {
             $translatedField = $this->getTranslatedField($field);
-            $sheet->setCellValueByColumnAndRow($col + 1, 1, '' === $translatedField ? $field : $translatedField);
+            $cell = Coordinate::stringFromColumnIndex($col + 1) . '1';
+            $sheet->setCellValue($cell, '' === $translatedField ? $field : $translatedField);
         }
 
         $response = new StreamedResponse(function () use ($spreadsheet) {

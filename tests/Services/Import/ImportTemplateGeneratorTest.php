@@ -11,8 +11,9 @@ use function ob_start;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
-use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -64,7 +65,8 @@ class ImportTemplateGeneratorTest extends TestCase implements ImportTemplateGene
 
         $expectedHeaders = ['id', 'name', 'email', 'created_at'];
         foreach ($expectedHeaders as $col => $header) {
-            $this->assertEquals($header, $sheet->getCellByColumnAndRow($col + 1, 1)->getValue());
+            $cell = Coordinate::stringFromColumnIndex($col + 1) . '1';
+            $this->assertEquals($header, $sheet->getCell($cell)->getValue());
         }
 
         unlink($tempFilePath);

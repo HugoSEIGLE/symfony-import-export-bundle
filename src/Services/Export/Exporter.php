@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\Query;
 use InvalidArgumentException;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -125,7 +126,8 @@ class Exporter implements ExporterInterface
     private function writeHeadersToSheet(Worksheet $sheet, array $headers): void
     {
         foreach ($headers as $col => $header) {
-            $sheet->setCellValueByColumnAndRow($col + 1, 1, $header);
+            $cell = Coordinate::stringFromColumnIndex($col + 1) . '1';
+            $sheet->setCellValue($cell, $header);
         }
     }
 
@@ -136,7 +138,8 @@ class Exporter implements ExporterInterface
     {
         foreach ($values as $row => $value) {
             foreach ($value as $col => $val) {
-                $sheet->setCellValueByColumnAndRow($col + 1, $row + 2, $val);
+                $cell = Coordinate::stringFromColumnIndex($col + 1) . ($row + 2);
+                $sheet->setCellValue($cell, $val);
             }
         }
     }
