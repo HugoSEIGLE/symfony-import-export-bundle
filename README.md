@@ -1,3 +1,6 @@
+![Packagist Version](https://img.shields.io/packagist/v/hugoseigle/symfony-import-export-bundle)
+![Total Downloads](https://img.shields.io/packagist/dt/hugoseigle/symfony-import-export-bundle)
+
 # 📦 Symfony ImportExportBundle
 
 The SymfonyImportExportBundle simplifies data import, export, and template generation in Symfony applications. By leveraging Doctrine entities and Symfony forms, this bundle provides a seamless data management workflow.
