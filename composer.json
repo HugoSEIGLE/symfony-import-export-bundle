@@ -3,6 +3,13 @@
     "description": "Symfony bundle for importing and exporting entities",
     "license": "MIT",
     "type": "symfony-bundle",
+    "keywords": [
+        "symfony",
+        "import",
+        "export",
+        "spreadsheet",
+        "doctrine"
+    ],
     "authors": [
         {
             "name": "Hugo SEIGLE",
