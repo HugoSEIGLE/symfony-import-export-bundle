@@ -53,7 +53,7 @@ class ImporterTemplate implements ImporterTemplateInterface
 
         $fields = $importersConfig[$class]['fields'];
 
-        if ($importersConfig[$class]['allow_delete']) {
+        if ($importersConfig[$class]['allow_delete'] ?? false) {
             $fields[] = 'deleted';
         }
 
@@ -106,7 +106,7 @@ class ImporterTemplate implements ImporterTemplateInterface
                 $fields
             );
 
-            fputcsv($handle, $translatedFields);
+            fputcsv($handle, $translatedFields, ',', '"', '\\');
 
             fclose($handle);
         });

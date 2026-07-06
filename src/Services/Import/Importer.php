@@ -294,7 +294,7 @@ class Importer implements ImporterInterface
     {
         $rows = [];
         if (($handle = fopen($file->getPathname(), 'r')) !== false) {
-            while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+            while (($data = fgetcsv($handle, 1000, ',', '"', '\\')) !== false) {
                 $rows[] = array_map(fn ($cell) => 'false' === $cell ? 'false' : trim((string) $cell), $data);
             }
             fclose($handle);
