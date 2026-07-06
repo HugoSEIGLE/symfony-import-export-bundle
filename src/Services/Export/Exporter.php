@@ -83,10 +83,10 @@ class Exporter implements ExporterInterface
                 throw new RuntimeException('Could not open output stream.');
             }
 
-            fputcsv($handle, $translatedHeaders);
+            fputcsv($handle, $translatedHeaders, ',', '"', '\\');
 
             foreach ($this->formatValues($results, $methods) as $row) {
-                fputcsv($handle, $row);
+                fputcsv($handle, $row, ',', '"', '\\');
             }
 
             fclose($handle);

@@ -17,18 +17,18 @@
         }
     ],
     "require": {
-        "php": ">=8.3",
+        "php": ">=8.2",
         "doctrine/orm": "^3.2",
         "phpoffice/phpspreadsheet": "^2.3.5",
-        "symfony/form": "^7.1",
-        "symfony/framework-bundle": "^6.0 || ^7.0",
-        "symfony/translation": "^7.1"
+        "symfony/form": "^6.4 || ^7.1 || ^8.0",
+        "symfony/framework-bundle": "^6.4 || ^7.1 || ^8.0",
+        "symfony/translation": "^6.4 || ^7.1 || ^8.0"
     },
     "require-dev": {
-        "ergebnis/composer-normalize": "^2.44",
+        "ergebnis/composer-normalize": "^2.52",
         "friendsofphp/php-cs-fixer": "^3.64",
-        "phpro/grumphp": "^2.9",
-        "phpstan/phpstan": "^1.12",
+        "phpro/grumphp": "^2.17",
+        "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^10.5",
         "symfony/test-pack": "^1.0"
     },
@@ -56,7 +56,7 @@
         },
         "symfony": {
             "allow-contrib": false,
-            "require": "6.* || 7.*"
+            "require": "6.4.* || 7.* || 8.*"
         }
     },
     "scripts": {
