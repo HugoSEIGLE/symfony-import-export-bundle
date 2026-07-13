@@ -6,7 +6,11 @@ namespace SymfonyImportExportBundle\Tests\Services\Import;
 
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\Persistence\Mapping\RuntimeReflectionService;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -147,6 +151,22 @@ final class ImporterTest extends TestCase
         self::assertCount(1, $result->getCreatedEntities());
     }
 
+    public function testXlsxNativeAndUppercaseBooleansAreAccepted(): void
+    {
+        $this->metadata->mapField(['fieldName' => 'active', 'type' => 'boolean']);
+        $this->configure(['active']);
+        $this->formFactory->method('create')->willReturn($this->validForm());
+
+        $result = $this->importer()->import(
+            $this->xlsxFile([['active'], [true], [false], ['TRUE'], ['FALSE']], 'booleans.xlsx'),
+            TestEntity::class,
+            'form',
+        );
+
+        self::assertTrue($result->isValid());
+        self::assertCount(4, $result->getCreatedEntities());
+    }
+
     public function testEmptyFileReturnsAnError(): void
     {
         $this->configure(['name']);
@@ -223,14 +243,103 @@ final class ImporterTest extends TestCase
         self::assertTrue($result->isValid());
     }
 
+    public function testCreateCanBeDisabledPerImport(): void
+    {
+        $this->configure(['name']);
+        $this->formFactory->method('create')->willReturn($this->validForm());
+
+        $result = $this->importer()->import(
+            $this->file("name\nAlice\n"),
+            TestEntity::class,
+            'form',
+            allowCreate: false,
+        );
+
+        self::assertSame('create', $result->getErrors()[0]->value);
+        self::assertSame('Operation "create" is not allowed.', $result->getErrors()[0]->message);
+        self::assertSame([], $result->getCreatedEntities());
+    }
+
+    public function testUpdateCanBeDisabledPerImport(): void
+    {
+        $this->metadata->mapField(['fieldName' => 'name', 'type' => 'string']);
+        $this->configure(['name'], uniqueFields: ['name']);
+        $this->repositoryReturning(new TestEntity());
+        $this->formFactory->method('create')->willReturn($this->validForm());
+
+        $result = $this->importer()->import(
+            $this->file("name\nAlice\n"),
+            TestEntity::class,
+            'form',
+            allowUpdate: false,
+        );
+
+        self::assertSame('update', $result->getErrors()[0]->value);
+        self::assertSame([], $result->getUpdatedEntities());
+    }
+
+    public function testDeleteCanBeDisabledPerImport(): void
+    {
+        $this->configure(['name'], allowDelete: true, uniqueFields: ['name']);
+        $this->repositoryReturning(new TestEntity());
+        $this->formFactory->method('create')->willReturn($this->validForm());
+
+        $result = $this->importer()->import(
+            $this->file("name,deleted\nAlice,TRUE\n"),
+            TestEntity::class,
+            'form',
+            allowDelete: false,
+        );
+
+        self::assertSame('delete', $result->getErrors()[0]->value);
+        self::assertSame([], $result->getDeletedEntities());
+    }
+
+    public function testUpdateRemainsAllowedByDefault(): void
+    {
+        $this->metadata->mapField(['fieldName' => 'name', 'type' => 'string']);
+        $this->metadata->wakeupReflection(new RuntimeReflectionService());
+        $this->configure(['name'], uniqueFields: ['name']);
+        $this->repositoryReturning(new TestEntity());
+        $this->formFactory->method('create')->willReturn($this->validForm());
+
+        $result = $this->importer()->import($this->file("name\nAlice\n"), TestEntity::class, 'form');
+
+        self::assertTrue($result->isValid());
+        self::assertCount(1, $result->getUpdatedEntities());
+    }
+
+    public function testDeleteRemainsAllowedByDefaultWhenConfigured(): void
+    {
+        $this->configure(['name'], allowDelete: true, uniqueFields: ['name']);
+        $this->repositoryReturning(new TestEntity());
+        $this->formFactory->method('create')->willReturn($this->validForm());
+
+        $result = $this->importer()->import(
+            $this->file("name,deleted\nAlice,TRUE\n"),
+            TestEntity::class,
+            'form',
+        );
+
+        self::assertTrue($result->isValid());
+        self::assertCount(1, $result->getDeletedEntities());
+    }
+
     /** @param list<string> $fields */
-    private function configure(array $fields): void
+    private function configure(array $fields, bool $allowDelete = false, array $uniqueFields = []): void
     {
         $this->config = [
             'fields' => $fields,
-            'allow_delete' => false,
-            'unique_fields' => [],
+            'allow_delete' => $allowDelete,
+            'unique_fields' => $uniqueFields,
         ];
+    }
+
+    private function repositoryReturning(object $entity): void
+    {
+        $repository = $this->getMockBuilder(EntityRepository::class)->disableOriginalConstructor()->getMock();
+        $repository->method('findOneBy')->willReturn($entity);
+        $this->entityManager->method('getRepository')->willReturn($repository);
     }
 
     private function importer(): Importer
@@ -273,6 +382,14 @@ final class ImporterTest extends TestCase
         self::assertNotFalse($path);
         $spreadsheet = new Spreadsheet();
         $spreadsheet->getActiveSheet()->fromArray($rows);
+        foreach ($rows as $rowIndex => $row) {
+            foreach ($row as $columnIndex => $value) {
+                if (is_bool($value)) {
+                    $coordinate = Coordinate::stringFromColumnIndex($columnIndex + 1) . ($rowIndex + 1);
+                    $spreadsheet->getActiveSheet()->setCellValueExplicit($coordinate, $value, DataType::TYPE_BOOL);
+                }
+            }
+        }
         (new Xlsx($spreadsheet))->save($path);
         $spreadsheet->disconnectWorksheets();
         $this->temporaryFiles[] = $path;

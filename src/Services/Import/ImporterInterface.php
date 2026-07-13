@@ -14,8 +14,18 @@ interface ImporterInterface
     /**
      * @param class-string $entityClass
      * @param class-string $formType
+     * @param bool $allowDelete allow this call to produce deleted entities
+     * @param bool $allowCreate allow this call to produce created entities
+     * @param bool $allowUpdate allow this call to produce updated entities
      */
-    public function import(UploadedFile $file, string $entityClass, string $formType): ImportResult;
+    public function import(
+        UploadedFile $file,
+        string $entityClass,
+        string $formType,
+        bool $allowDelete = true,
+        bool $allowCreate = true,
+        bool $allowUpdate = true,
+    ): ImportResult;
 
     /**
      * @return array<string>

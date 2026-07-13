@@ -72,9 +72,18 @@ class Importer implements ImporterInterface
     /**
      * @param class-string $entityClass
      * @param class-string $formType
+     * @param bool $allowDelete allow this call to produce deleted entities
+     * @param bool $allowCreate allow this call to produce created entities
+     * @param bool $allowUpdate allow this call to produce updated entities
      */
-    public function import(UploadedFile $file, string $entityClass, string $formType): ImportResult
-    {
+    public function import(
+        UploadedFile $file,
+        string $entityClass,
+        string $formType,
+        bool $allowDelete = true,
+        bool $allowCreate = true,
+        bool $allowUpdate = true,
+    ): ImportResult {
         // Importer is a shared service: never leak data from a previous call.
         $this->result = new ImportResult();
 
@@ -152,12 +161,24 @@ class Importer implements ImporterInterface
             $existingEntity = $this->findExistingEntity($entityClass, $uniqueFields, $rowData);
             if (null !== $existingEntity) {
                 if (true === $deleted) {
-                    $this->result->addDeletedEntity($existingEntity);
+                    if (!$allowDelete) {
+                        $this->addOperationNotAllowedError($rowNumber, 'delete');
+                    } else {
+                        $this->result->addDeletedEntity($existingEntity);
+                    }
+                } elseif (!$allowUpdate) {
+                    $this->addOperationNotAllowedError($rowNumber, 'update');
                 } else {
                     $this->updateEntity($entity, $existingEntity, $fields);
                 }
             } elseif (true === $deleted) {
-                $this->addError($rowNumber, 'deleted', $this->translate('import_export.deleted_entity_not_found'), $deleted);
+                if (!$allowDelete) {
+                    $this->addOperationNotAllowedError($rowNumber, 'delete');
+                } else {
+                    $this->addError($rowNumber, 'deleted', $this->translate('import_export.deleted_entity_not_found'), $deleted);
+                }
+            } elseif (!$allowCreate) {
+                $this->addOperationNotAllowedError($rowNumber, 'create');
             } else {
                 $this->result->addCreatedEntity($entity);
             }
@@ -423,7 +444,12 @@ class Importer implements ImporterInterface
                 $cells = [];
                 foreach ($row->getCellIterator() as $cell) {
                     $value = $cell->getValue();
-                    $cells[] = is_scalar($value) ? trim((string) $value) : '';
+                    $cells[] = match (true) {
+                        true === $value => $this->boolTrue,
+                        false === $value => $this->boolFalse,
+                        is_scalar($value) => trim((string) $value),
+                        default => '',
+                    };
                 }
                 yield $index - 1 => $cells;
             }
@@ -447,6 +473,22 @@ class Importer implements ImporterInterface
     private function addError(int $row, ?string $field, string $message, mixed $value = null): void
     {
         $this->result->addError(new ImportError($row, $field, $message, $value));
+    }
+
+    private function addOperationNotAllowedError(int $row, string $operation): void
+    {
+        $key = 'import_export.operation_not_allowed';
+        $message = $this->translate($key, ['%operation%' => $operation]);
+        if ($key === $message) {
+            $message = sprintf('Operation "%s" is not allowed.', $operation);
+        }
+
+        $this->addError(
+            $row,
+            null,
+            $message,
+            $operation,
+        );
     }
 
     /** @param array<string, mixed> $parameters */

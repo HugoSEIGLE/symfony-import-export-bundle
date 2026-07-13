@@ -51,54 +51,146 @@ The order of `fields` is significant. With strict header validation enabled (the
 
 ## Importing
 
-Create a Symfony form type containing every configured field. Standard form constraints and data transformers remain the source of validation for entity data and Doctrine relations.
+Create a dedicated Symfony form type containing every configured entity field. Standard Symfony constraints and form data transformers remain the source of validation for entity data and Doctrine relations. The virtual `deleted` column must not be added to the form: the importer consumes it before submitting the entity data.
 
 ```php
+// src/Form/ProductImportType.php
+namespace App\Form;
+
+use App\Entity\Category;
+use App\Entity\Product;
+use App\Entity\Tag;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+
+final class ProductImportType extends AbstractType
+{
+    public function buildForm(FormBuilderInterface $builder, array $options): void
+    {
+        $builder
+            ->add('sku')
+            ->add('name')
+            ->add('price')
+            ->add('active', CheckboxType::class, ['required' => false])
+            ->add('availableAt')
+            ->add('category', EntityType::class, [
+                'class' => Category::class,
+            ])
+            ->add('tags', EntityType::class, [
+                'class' => Tag::class,
+                'multiple' => true,
+            ]);
+    }
+
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->setDefaults(['data_class' => Product::class]);
+    }
+}
+```
+
+The following is a complete Symfony controller. Runtime operation flags can come directly from voters, roles, the current route or any application rule:
+
+```php
+// src/Controller/ProductImportController.php
+namespace App\Controller;
+
 use App\Entity\Product;
 use App\Form\ProductImportType;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\Routing\Attribute\Route;
+use SymfonyImportExportBundle\Services\Import\ImportError;
 use SymfonyImportExportBundle\Services\Import\ImporterInterface;
 
-public function import(
-    Request $request,
-    ImporterInterface $importer,
-    EntityManagerInterface $entityManager,
-): Response {
-    $file = $request->files->get('import_file');
-    $result = $importer->import($file, Product::class, ProductImportType::class);
-
-    if (!$result->isValid()) {
-        foreach ($result->getErrors() as $error) {
-            // $error->row, $error->field, $error->message, $error->value
+final class ProductImportController extends AbstractController
+{
+    #[Route('/admin/products/import', name: 'app_product_import', methods: ['POST'])]
+    public function __invoke(
+        Request $request,
+        ImporterInterface $importer,
+        EntityManagerInterface $entityManager,
+    ): JsonResponse {
+        $file = $request->files->get('file');
+        if (!$file instanceof UploadedFile) {
+            throw new BadRequestHttpException('A file is required.');
         }
 
-        return new Response('The import contains errors.', Response::HTTP_UNPROCESSABLE_ENTITY);
+        $result = $importer->import(
+            $file,
+            Product::class,
+            ProductImportType::class,
+            allowDelete: $this->isGranted('PRODUCT_DELETE'),
+            allowCreate: $this->isGranted('PRODUCT_CREATE'),
+            allowUpdate: $this->isGranted('PRODUCT_UPDATE'),
+        );
+
+        if (!$result->isValid()) {
+            return $this->json([
+                'errors' => array_map(static fn (ImportError $error): array => [
+                    'row' => $error->row,
+                    'field' => $error->field,
+                    'message' => $error->message,
+                    'value' => $error->value,
+                ], $result->getErrors()),
+            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $entityManager->wrapInTransaction(function (EntityManagerInterface $entityManager) use ($result): void {
+            foreach ($result->getCreatedEntities() as $entity) {
+                $entityManager->persist($entity);
+            }
+
+            // Updated entities returned by Doctrine are already managed.
+            foreach ($result->getDeletedEntities() as $entity) {
+                $entityManager->remove($entity);
+            }
+        });
+
+        return $this->json([
+            'created' => count($result->getCreatedEntities()),
+            'updated' => count($result->getUpdatedEntities()),
+            'deleted' => count($result->getDeletedEntities()),
+        ]);
     }
-
-    foreach ($result->getCreatedEntities() as $entity) {
-        $entityManager->persist($entity);
-    }
-
-    // Updated entities are already managed when loaded by Doctrine. Calling
-    // persist() is normally unnecessary, but the list is available for auditing.
-    foreach ($result->getDeletedEntities() as $entity) {
-        $entityManager->remove($entity);
-    }
-
-    $entityManager->flush();
-
-    return new Response(sprintf(
-        'Import complete: %d created, %d updated, %d deleted.',
-        count($result->getCreatedEntities()),
-        count($result->getUpdatedEntities()),
-        count($result->getDeletedEntities()),
-    ));
 }
 ```
 
 Each data row is independent: malformed rows add structured `ImportError` objects and do not prevent later rows from being processed. The result contains candidate changes only; the bundle deliberately does not call `persist()`, `remove()` or `flush()`, so the application controls transactions and partial-import policy.
+
+### Runtime operation permissions
+
+The last three arguments of `import()` control which changes a specific call may produce:
+
+```php
+$result = $importer->import(
+    $file,
+    Product::class,
+    ProductImportType::class,
+    allowDelete: false,
+    allowCreate: true,
+    allowUpdate: true,
+);
+```
+
+- `allowDelete` controls rows whose `deleted` value is true. The entity configuration must also have `allow_delete: true`; a runtime flag cannot add a column absent from the configured format.
+- `allowCreate` controls rows for which no entity matches `unique_fields`.
+- `allowUpdate` controls rows for which an existing entity matches `unique_fields` and deletion was not requested.
+
+All three default to `true`, preserving existing calls. A forbidden operation adds an `ImportError` with the affected row, does not add an entity to the corresponding result list, and does not prevent later rows from being processed.
+
+### Excel boolean values
+
+Excel represents native logical values as `TRUE` and `FALSE` ([Microsoft documentation](https://support.microsoft.com/en-us/excel/functions/true-function)). This does not cause a case problem: textual boolean values are compared case-insensitively, so `true`, `TRUE`, `false` and `FALSE` work with the default configuration.
+
+For XLSX files, native boolean cells are returned by PhpSpreadsheet as PHP booleans rather than strings. The importer normalizes them to the configured `bool_true`/`bool_false` tokens before validation. Consequently both native Excel booleans and textual uppercase values are supported. For custom tokens such as `yes`/`no`, native cells still work; textual cells must contain those configured tokens.
 
 ### Backward-compatible accessors
 
@@ -191,6 +283,8 @@ Association values are passed to the Symfony form. Configure an appropriate form
 PHP 8.1 is the minimum required by the source and the lowest supported releases of Doctrine ORM 3, PhpSpreadsheet 2, PHPUnit 10 and Symfony 6.4. Symfony 7 and 8 are selected by Composer only on PHP versions satisfying their own constraints (Symfony 8 currently requires a newer PHP runtime).
 
 The only source-level API evolution is that `ImporterInterface::import()` now returns `ImportResult` instead of `void`. Existing callers that ignore the return value continue to work. Custom third-party implementations of `ImporterInterface` must update their return type and implement `getResult()`. The legacy result accessors remain available and deprecated to ease migration.
+
+The canonical namespace remains `SymfonyImportExportBundle\...`. Renaming it to `HugoSEIGLE\...` in the current major would break PHP imports, Symfony service identifiers, autowiring and existing `config/bundles.php` files. Such a rename should only be introduced in a new major release with an explicit compatibility layer and migration guide.
 
 ## Development
 
