@@ -71,8 +71,8 @@ grumphp:
       triggered_by: ["php"]
     phpversion:
       metadata:
-        label: "Check PHP version is 8.3"
-      project: "8.3"
+        label: "Check PHP version is 8.1"
+      project: "8.1"
     xmllint:
       ignore_patterns: []
       load_from_net: false

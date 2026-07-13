@@ -19,8 +19,11 @@ use function class_exists;
 use function fclose;
 use function fopen;
 use function fputcsv;
+use function fwrite;
 use function in_array;
 use function is_array;
+use function is_string;
+use function strtolower;
 
 class ImporterTemplate implements ImporterTemplateInterface
 {
@@ -28,6 +31,10 @@ class ImporterTemplate implements ImporterTemplateInterface
         private readonly ParameterBagInterface $parameterBag,
         private readonly TranslatorInterface $translator,
         private readonly MethodToSnakeInterface $methodToSnake,
+        private readonly string $csvDelimiter = ',',
+        private readonly string $csvEnclosure = '"',
+        private readonly string $csvEscape = '\\',
+        private readonly bool $csvBom = false,
     ) {
     }
 
@@ -37,7 +44,8 @@ class ImporterTemplate implements ImporterTemplateInterface
             throw new InvalidArgumentException('Class must be an object.');
         }
 
-        if (!in_array($fileType, [ImporterInterface::XLSX, ImporterInterface::CSV])) {
+        $fileType = strtolower($fileType);
+        if (!in_array($fileType, [ImporterInterface::XLSX, ImporterInterface::CSV], true)) {
             throw new InvalidArgumentException('Invalid file type.');
         }
 
@@ -51,9 +59,25 @@ class ImporterTemplate implements ImporterTemplateInterface
             throw new InvalidArgumentException('Class not found in importers configuration.');
         }
 
-        $fields = $importersConfig[$class]['fields'];
+        $importerConfig = $importersConfig[$class];
+        if (!is_array($importerConfig)) {
+            throw new InvalidArgumentException('Invalid importer configuration.');
+        }
 
-        if ($importersConfig[$class]['allow_delete'] ?? false) {
+        $configuredFields = $importerConfig['fields'] ?? null;
+        if (!is_array($configuredFields)) {
+            throw new InvalidArgumentException('Importer fields must be an array.');
+        }
+
+        $fields = [];
+        foreach ($configuredFields as $field) {
+            if (!is_string($field)) {
+                throw new InvalidArgumentException('Importer field names must be strings.');
+            }
+            $fields[] = $field;
+        }
+
+        if ($importerConfig['allow_delete'] ?? false) {
             $fields[] = 'deleted';
         }
 
@@ -101,12 +125,16 @@ class ImporterTemplate implements ImporterTemplateInterface
                 return;
             }
 
+            if ($this->csvBom) {
+                fwrite($handle, "\xEF\xBB\xBF");
+            }
+
             $translatedFields = array_map(
                 fn ($field) => $this->getTranslatedField($field),
                 $fields
             );
 
-            fputcsv($handle, $translatedFields, ',', '"', '\\');
+            fputcsv($handle, $translatedFields, $this->csvDelimiter, $this->csvEnclosure, $this->csvEscape);
 
             fclose($handle);
         });

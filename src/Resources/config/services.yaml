@@ -1,6 +1,7 @@
 services:
     PhpOffice\PhpSpreadsheet\Spreadsheet:
         class: PhpOffice\PhpSpreadsheet\Spreadsheet
+        shared: false
     SymfonyImportExportBundle\Services\MethodToSnakeInterface:
         class: SymfonyImportExportBundle\Services\MethodToSnake
 
@@ -14,9 +15,12 @@ services:
             $dateFormat: '%import_export.date_format%'
             $boolTrue: '%import_export.bool_true%'
             $boolFalse: '%import_export.bool_false%'
+            $csvDelimiter: '%import_export.csv.delimiter%'
+            $csvEnclosure: '%import_export.csv.enclosure%'
+            $csvEscape: '%import_export.csv.escape%'
+            $csvBom: '%import_export.csv.bom%'
         autowire: true
         autoconfigure: true
-        public: true
 
     SymfonyImportExportBundle\Services\Import\ImporterInterface:
         alias: SymfonyImportExportBundle\Services\Import\Importer
@@ -24,14 +28,23 @@ services:
     SymfonyImportExportBundle\Services\Import\Importer:
         arguments:
             $boolTrue: '%import_export.bool_true%'
+            $boolFalse: '%import_export.bool_false%'
+            $validateHeaders: '%import_export.validate_headers%'
+            $csvDelimiter: '%import_export.csv.delimiter%'
+            $csvEnclosure: '%import_export.csv.enclosure%'
+            $csvEscape: '%import_export.csv.escape%'
+            $methodToSnake: '@SymfonyImportExportBundle\Services\MethodToSnakeInterface'
         autowire: true
         autoconfigure: true
-        public: true
 
     SymfonyImportExportBundle\Services\Import\ImporterTemplateInterface:
         alias: SymfonyImportExportBundle\Services\Import\ImporterTemplate
 
     SymfonyImportExportBundle\Services\Import\ImporterTemplate:
+        arguments:
+            $csvDelimiter: '%import_export.csv.delimiter%'
+            $csvEnclosure: '%import_export.csv.enclosure%'
+            $csvEscape: '%import_export.csv.escape%'
+            $csvBom: '%import_export.csv.bom%'
         autowire: true
         autoconfigure: true
-        public: true

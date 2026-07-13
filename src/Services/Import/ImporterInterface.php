@@ -8,14 +8,14 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 interface ImporterInterface
 {
-    public const string XLSX = 'xlsx';
-    public const string CSV = 'csv';
+    public const XLSX = 'xlsx';
+    public const CSV = 'csv';
 
     /**
      * @param class-string $entityClass
      * @param class-string $formType
      */
-    public function import(UploadedFile $file, string $entityClass, string $formType): void;
+    public function import(UploadedFile $file, string $entityClass, string $formType): ImportResult;
 
     /**
      * @return array<string>
@@ -23,6 +23,8 @@ interface ImporterInterface
     public function getErrors(): array;
 
     public function isValid(): bool;
+
+    public function getResult(): ImportResult;
 
     /**
      * @return array<mixed>
