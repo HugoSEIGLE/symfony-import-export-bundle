@@ -116,12 +116,24 @@ class ExporterTest extends TestCase
         unlink($tempFilePath);
     }
 
+    public function testEmptyExportContainsHeadersOnly(): void
+    {
+        $query = $this->createQuery([]);
+        $response = $this->exporter->export($query, ['getId'], 'empty', ExporterInterface::CSV);
+
+        ob_start();
+        $response->sendContent();
+        $content = ob_get_clean();
+
+        $this->assertSame("import_export.get_id\n", $content);
+    }
+
     private function getMethods(): array
     {
         return ['getId', 'getName', 'getEmail', 'getCreatedAt', 'getUpdatedAt', 'getPrice', 'getTags', 'isActive'];
     }
 
-    private function createQuery(): Query
+    private function createQuery(?array $results = null): Query
     {
         $queryMock = $this->getMockBuilder(Query::class)
                           ->disableOriginalConstructor()
@@ -137,7 +149,7 @@ class ExporterTest extends TestCase
         $testEntity->setTags(['tag1', 'tag2']);
         $testEntity->setActive(true);
 
-        $queryMock->method('getResult')->willReturn([$testEntity]);
+        $queryMock->method('toIterable')->willReturn($results ?? [$testEntity]);
 
         /** @var Query $queryMock */
         return $queryMock;

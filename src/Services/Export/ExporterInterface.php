@@ -9,8 +9,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 interface ExporterInterface
 {
-    public const string XLSX = 'xlsx';
-    public const string CSV = 'csv';
+    public const XLSX = 'xlsx';
+    public const CSV = 'csv';
 
     /**
      * @param array<string> $methods

@@ -1,6 +1,4 @@
 # phpstan.neon
-includes:
-    - phpstan-baseline.neon
 parameters:
     level: max
     paths:

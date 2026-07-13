@@ -10,6 +10,18 @@
 
                 <xs:element name="bool_true" type="xs:string" minOccurs="1" maxOccurs="1"/>
                 <xs:element name="bool_false" type="xs:string" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="validate_headers" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
+
+                <xs:element name="csv" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="delimiter" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                            <xs:element name="enclosure" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                            <xs:element name="escape" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                            <xs:element name="bom" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
 
                 <xs:element name="importers" minOccurs="1" maxOccurs="1">
                     <xs:complexType>
@@ -26,6 +38,7 @@
                                         </xs:element>
 
                                         <xs:element name="allow_delete" type="xs:boolean" minOccurs="1" maxOccurs="1"/>
+                                        <xs:element name="validate_headers" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
 
                                         <xs:element name="unique_fields" minOccurs="1" maxOccurs="1">
                                             <xs:complexType>

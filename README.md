@@ -1,207 +1,296 @@
-![Packagist Version](https://img.shields.io/packagist/v/hugoseigle/symfony-import-export-bundle)
-![Total Downloads](https://img.shields.io/packagist/dt/hugoseigle/symfony-import-export-bundle)
+[![Packagist Version](https://img.shields.io/packagist/v/hugoseigle/symfony-import-export-bundle)](https://packagist.org/packages/hugoseigle/symfony-import-export-bundle)
+[![Total Downloads](https://img.shields.io/packagist/dt/hugoseigle/symfony-import-export-bundle)](https://packagist.org/packages/hugoseigle/symfony-import-export-bundle)
 
-# 📦 Symfony ImportExportBundle
+# Symfony ImportExportBundle
 
-The SymfonyImportExportBundle simplifies data import, export, and template generation in Symfony applications. By leveraging Doctrine entities and Symfony forms, this bundle provides a seamless data management workflow.
+Import and export Doctrine entities as CSV or XLSX using Symfony forms for import validation. The bundle supports PHP 8.1+, Symfony 6.4/7/8, Doctrine ORM 3 and PhpSpreadsheet 2.
 
-## 🚀 Installation
-
-### Install the bundle via Composer:
+## Installation
 
 ```bash
 composer require hugoseigle/symfony-import-export-bundle
 ```
 
-### Register the bundle in config/bundles.php:
+If Symfony Flex does not register the bundle automatically, add it to `config/bundles.php`:
 
 ```php
-
-SymfonyImportExportBundle\SymfonyImportExportBundle::class => ['all' => true],
+return [
+    SymfonyImportExportBundle\SymfonyImportExportBundle::class => ['all' => true],
+];
 ```
 
-## ⚙️ Configuration
+## Configuration
 
-### Set up import_export.yaml in config/packages:
+Create `config/packages/import_export.yaml`:
 
-``` yaml
-
+```yaml
 import_export:
-  date_format: 'Y-m-d'
-  bool_true: 'true'
-  bool_false: 'false'
+  date_format: 'Y-m-d H:i:s'
+  bool_true: 'yes'
+  bool_false: 'no'
+  validate_headers: true
+
+  csv:
+    delimiter: ','
+    enclosure: '"'
+    escape: '\'
+    bom: false
+
   importers:
     App\Entity\Product:
-      fields:
-        - name
-        - description
-        - price
-        - active
-        - createdAt
-        - updatedAt
+      fields: [sku, name, price, active, availableAt, category, tags]
+      unique_fields: [sku]
       allow_delete: true
-      unique_fields: ['name']
+      # Optional per-entity override:
+      # validate_headers: false
 ```
 
-### Configuration Options
+The order of `fields` is significant. With strict header validation enabled (the default), the file must use exactly this order. Headers may be either the field names or the complete translated header list produced by the template generator. When `allow_delete` is enabled, a final `deleted` column is required.
 
-``` yaml
-    date_format: Format used for dates in import/export operations.
-    bool_true / bool_false: Values for boolean true and false to ensure compatibility with different data sources.
-    importers: Configure entity fields for import:
-        fields: Define the fields to import.
-        allow_delete: Enable or disable deletion of existing records.
-        unique_fields: Specify unique fields for identifying existing entities.
-```
+`bool_true` and `bool_false` are matched case-insensitively after trimming. Any other value is reported as an import error. CSV controls are shared by import, export and template generation; `delimiter` and `enclosure` must be one character and `escape` must be zero or one character.
 
-## 📄 Usage
+## Importing
 
-### ✨ Exporter
-
-The Exporter allows exporting data from entities into CSV or XLSX files.
-#### Basic Export Usage
+Create a dedicated Symfony form type containing every configured entity field. Standard Symfony constraints and form data transformers remain the source of validation for entity data and Doctrine relations. The virtual `deleted` column must not be added to the form: the importer consumes it before submitting the entity data.
 
 ```php
+// src/Form/ProductImportType.php
+namespace App\Form;
 
-use SymfonyImportExportBundle\Services\Export\ExporterInterface;
-
-// Inject the ExporterInterface
-public function exportData(ExporterInterface $exporter): Response
-{
-    $query = $this->productRepository->yourQueryMethod();
-
-    return $exporter->export($query, ['getName', 'getDescription', ...], 'fileName', ExporterInterface::XLSX); // or 'csv'
-}
-```
-
-### ✨ Importer
-
-The Importer allows importing data from CSV or XLSX files into entities, with validation handled by Symfony Forms.
-
-#### Setting Up the Import Form
-
-    Note: For boolean fields, set empty_data to false or true explicitly in the form type to ensure values are not interpreted as null.
-
-```php
-
-// src/Form/ProductType.php
-
+use App\Entity\Category;
+use App\Entity\Product;
+use App\Entity\Tag;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 
-class ProductType extends AbstractType
+final class ProductImportType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
+            ->add('sku')
             ->add('name')
-            ->add('description')
             ->add('price')
-            ->add('active', CheckboxType::class, [
-                'required' => false,
-                'empty_data' => 'false', // Ensures boolean fields are handled correctly
+            ->add('active', CheckboxType::class, ['required' => false])
+            ->add('availableAt')
+            ->add('category', EntityType::class, [
+                'class' => Category::class,
+            ])
+            ->add('tags', EntityType::class, [
+                'class' => Tag::class,
+                'multiple' => true,
             ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults([
-            'data_class' => Product::class,
+        $resolver->setDefaults(['data_class' => Product::class]);
+    }
+}
+```
+
+The following is a complete Symfony controller. Runtime operation flags can come directly from voters, roles, the current route or any application rule:
+
+```php
+// src/Controller/ProductImportController.php
+namespace App\Controller;
+
+use App\Entity\Product;
+use App\Form\ProductImportType;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\Routing\Attribute\Route;
+use SymfonyImportExportBundle\Services\Import\ImportError;
+use SymfonyImportExportBundle\Services\Import\ImporterInterface;
+
+final class ProductImportController extends AbstractController
+{
+    #[Route('/admin/products/import', name: 'app_product_import', methods: ['POST'])]
+    public function __invoke(
+        Request $request,
+        ImporterInterface $importer,
+        EntityManagerInterface $entityManager,
+    ): JsonResponse {
+        $file = $request->files->get('file');
+        if (!$file instanceof UploadedFile) {
+            throw new BadRequestHttpException('A file is required.');
+        }
+
+        $result = $importer->import(
+            $file,
+            Product::class,
+            ProductImportType::class,
+            allowDelete: $this->isGranted('PRODUCT_DELETE'),
+            allowCreate: $this->isGranted('PRODUCT_CREATE'),
+            allowUpdate: $this->isGranted('PRODUCT_UPDATE'),
+        );
+
+        if (!$result->isValid()) {
+            return $this->json([
+                'errors' => array_map(static fn (ImportError $error): array => [
+                    'row' => $error->row,
+                    'field' => $error->field,
+                    'message' => $error->message,
+                    'value' => $error->value,
+                ], $result->getErrors()),
+            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $entityManager->wrapInTransaction(function (EntityManagerInterface $entityManager) use ($result): void {
+            foreach ($result->getCreatedEntities() as $entity) {
+                $entityManager->persist($entity);
+            }
+
+            // Updated entities returned by Doctrine are already managed.
+            foreach ($result->getDeletedEntities() as $entity) {
+                $entityManager->remove($entity);
+            }
+        });
+
+        return $this->json([
+            'created' => count($result->getCreatedEntities()),
+            'updated' => count($result->getUpdatedEntities()),
+            'deleted' => count($result->getDeletedEntities()),
         ]);
     }
 }
 ```
 
-#### Importing Data
+Each data row is independent: malformed rows add structured `ImportError` objects and do not prevent later rows from being processed. The result contains candidate changes only; the bundle deliberately does not call `persist()`, `remove()` or `flush()`, so the application controls transactions and partial-import policy.
+
+### Runtime operation permissions
+
+The last three arguments of `import()` control which changes a specific call may produce:
 
 ```php
+$result = $importer->import(
+    $file,
+    Product::class,
+    ProductImportType::class,
+    allowDelete: false,
+    allowCreate: true,
+    allowUpdate: true,
+);
+```
 
-use SymfonyImportExportBundle\Services\Import\ImporterInterface;
+- `allowDelete` controls rows whose `deleted` value is true. The entity configuration must also have `allow_delete: true`; a runtime flag cannot add a column absent from the configured format.
+- `allowCreate` controls rows for which no entity matches `unique_fields`.
+- `allowUpdate` controls rows for which an existing entity matches `unique_fields` and deletion was not requested.
 
-// Inject the ImporterInterface
-public function importData(Request $request, ImporterInterface $importer): Response
+All three default to `true`, preserving existing calls. A forbidden operation adds an `ImportError` with the affected row, does not add an entity to the corresponding result list, and does not prevent later rows from being processed.
+
+### Excel boolean values
+
+Excel represents native logical values as `TRUE` and `FALSE` ([Microsoft documentation](https://support.microsoft.com/en-us/excel/functions/true-function)). This does not cause a case problem: textual boolean values are compared case-insensitively, so `true`, `TRUE`, `false` and `FALSE` work with the default configuration.
+
+For XLSX files, native boolean cells are returned by PhpSpreadsheet as PHP booleans rather than strings. The importer normalizes them to the configured `bool_true`/`bool_false` tokens before validation. Consequently both native Excel booleans and textual uppercase values are supported. For custom tokens such as `yes`/`no`, native cells still work; textual cells must contain those configured tokens.
+
+### Backward-compatible accessors
+
+The stateful accessors remain temporarily available:
+
+```php
+$importer->getErrors();  // list<string>, deprecated
+$importer->isValid();    // deprecated
+$importer->getSummary(); // ['created' => [...], 'updated' => [...], 'deleted' => [...]], deprecated
+$importer->getResult();  // the latest ImportResult
+```
+
+They are reset at the beginning of every `import()` call. New code should retain the returned `ImportResult` instead.
+
+## Exporting
+
+Pass a Doctrine ORM `Query`, getter methods in column order, a base filename, and a type:
+
+```php
+use SymfonyImportExportBundle\Services\Export\ExporterInterface;
+
+public function export(ExporterInterface $exporter): Response
 {
-    $file = $request->files->get('import_file'); // Retrieve file from the form or request
-    $importer->import($file, Product::class, ProductType::class);
+    $query = $this->productRepository->createExportQuery();
 
-    if ($importer->isValid()) {
-        $summary = $importer->getSummary();
-
-        foreach ($summary['created'] as $created) {
-            $this->entityManager->persist($created);
-        }
-
-        foreach ($summary['updated'] as $updated) {
-            $this->entityManager->persist($updated);
-        }
-
-        foreach ($summary['deleted'] as $deleted) {
-            $deleted->delete();
-        }
-
-        $this->entityManager->flush();
-
-        return new Response("Import successful! {$summary['inserted']} inserted, {$summary['updated']} updated.");
-    } else {
-        $errors = $importer->getErrors();
-        return new Response("Import failed with errors: " . implode(', ', $errors));
-    }
+    return $exporter->export(
+        $query,
+        ['getSku', 'getName', 'getPrice', 'isActive', 'getAvailableAt'],
+        'products',
+        ExporterInterface::CSV, // or ExporterInterface::XLSX
+    );
 }
 ```
 
-### ✨ Import Template Generator
+CSV rows are written directly from `Query::toIterable()` and are not accumulated in memory. XLSX also iterates the query, but PhpSpreadsheet still builds the workbook in memory. Empty queries produce a valid file containing headers only. Every XLSX export receives a fresh `Spreadsheet`, so repeated exports cannot leak worksheet state.
 
-The Import Template Generator creates CSV or XLSX templates with headers based on configured fields, allowing users to download pre-formatted templates.
-Generating an Import Template
+Headers use translation keys derived from method names, for example `getAvailableAt` becomes `import_export.get_available_at` in the `messages` domain.
+
+## Import templates
 
 ```php
-
+use App\Entity\Product;
+use SymfonyImportExportBundle\Services\Import\ImporterInterface;
 use SymfonyImportExportBundle\Services\Import\ImporterTemplateInterface;
 
-// Inject the ImporterTemplateInterface
-public function generateImportTemplate(ImporterTemplateInterface $templateGenerator): Response
+public function template(ImporterTemplateInterface $templates): Response
 {
-    return $templateGenerator->getImportTemplate(Product::class, ImporterInterface::XLSX); // or 'csv'
+    return $templates->getImportTemplate(Product::class, ImporterInterface::XLSX);
 }
 ```
 
-## 🔧 Advanced Usage
+CSV and XLSX templates contain the configured headers, including `deleted` when deletion is enabled.
 
-### Customizing Field Translations
+## Supported Doctrine values
 
-To translate field names, add them to your translations/messages.yaml file:
+- Scalars and booleans.
+- `date`, `datetime`, `date_immutable` and `datetime_immutable`, parsed strictly with `date_format`.
+- Backed enums declared through Doctrine's `enumType` mapping.
+- To-one associations as a single submitted value.
+- To-many associations as comma-separated submitted values.
 
-```yaml
+Association values are passed to the Symfony form. Configure an appropriate form field/data transformer (commonly `EntityType`) to resolve identifiers into entities.
 
-import_export:
-  name: "Product Name"
-  description: "Product Description"
-  price: "Price"
-  active: "Available"
+## Limitations
+
+- XLSX generation is not constant-memory because PhpSpreadsheet holds workbook cells in memory.
+- Import previews do not create a Doctrine transaction. The calling application decides whether errors reject the whole file or whether valid candidate changes are persisted.
+- CSV is intended for UTF-8 input. A UTF-8 BOM on the first header is accepted; output BOM is configurable.
+- Collection CSV values use commas internally, so the CSV cell itself must be correctly quoted.
+- Formula evaluation is not performed during optimized XLSX reads; stored cell values are imported.
+
+## Best practices
+
+- Keep `validate_headers: true` in production and generate files from the provided template.
+- Use stable database identifiers in `unique_fields`; an empty list always creates new candidates and never runs `findOneBy([])`.
+- Wrap persistence/removal and `flush()` in an application transaction when imports must be atomic.
+- Validate upload size and MIME type at the HTTP boundary and keep the filename extension consistent with the content.
+- Use dedicated import form types with explicit constraints and relation transformers.
+- Log structured errors without exposing sensitive cell values.
+
+## Performance
+
+- Prefer CSV for very large exports and imports: both paths stream row by row.
+- Keep export queries scalar-light and avoid getter methods that trigger N+1 lazy-loading; join required relations in the query.
+- Process large persistence batches in application code and periodically `flush()`/`clear()` when atomicity is not required.
+- XLSX reading uses data-only mode and releases worksheets after iteration, but large workbooks still require substantially more memory than CSV.
+
+## Compatibility and migration
+
+PHP 8.1 is the minimum required by the source and the lowest supported releases of Doctrine ORM 3, PhpSpreadsheet 2, PHPUnit 10 and Symfony 6.4. Symfony 7 and 8 are selected by Composer only on PHP versions satisfying their own constraints (Symfony 8 currently requires a newer PHP runtime).
+
+The only source-level API evolution is that `ImporterInterface::import()` now returns `ImportResult` instead of `void`. Existing callers that ignore the return value continue to work. Custom third-party implementations of `ImporterInterface` must update their return type and implement `getResult()`. The legacy result accessors remain available and deprecated to ease migration.
+
+The canonical namespace remains `SymfonyImportExportBundle\...`. Renaming it to `HugoSEIGLE\...` in the current major would break PHP imports, Symfony service identifiers, autowiring and existing `config/bundles.php` files. Such a rename should only be introduced in a new major release with an explicit compatibility layer and migration guide.
+
+## Development
+
+```bash
+composer test
+vendor/bin/phpstan analyse
+vendor/bin/php-cs-fixer fix --dry-run --diff
+vendor/bin/grumphp run
 ```
-
-### Error Handling and Custom Translations
-
-Each validation error and import/export error can be translated. For example:
-
-```yaml
-
-import_export:
-  missing_field: "Missing field: {{ field }}"
-  invalid_boolean: "Invalid boolean value for: {{ field }}"
-  invalid_datetime: "Invalid date format for: {{ field }}"
-  invalid_headers: "The headers in the file do not match the expected format."
-```
-
-🛠 FAQ
-
-Q: How do I customize date formats for imports?
-A: Adjust the date_format option in import_export.yaml.
-
-Q: How are boolean values handled during import?
-A: Ensure the bool_true and bool_false values are configured in import_export.yaml to match data inputs. Set empty_data on boolean fields in the form.
-
-Q: Can I specify unique fields for updating records?
-A: Yes, add unique_fields in the configuration to identify existing records.

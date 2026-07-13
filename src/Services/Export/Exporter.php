@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace SymfonyImportExportBundle\Services\Export;
 
 use DateTimeInterface;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\ORM\PersistentCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Query;
 use InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -19,9 +17,11 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 
 use function array_map;
+use function array_values;
 use function fclose;
 use function fopen;
 use function fputcsv;
+use function fwrite;
 use function get_class;
 use function gettype;
 use function implode;
@@ -31,135 +31,104 @@ use function is_object;
 use function is_scalar;
 use function method_exists;
 use function sprintf;
+use function strtolower;
 
 class Exporter implements ExporterInterface
 {
     public function __construct(
-        private readonly Spreadsheet $spreadsheet,
+        Spreadsheet $spreadsheet,
         private readonly TranslatorInterface $translator,
         private readonly MethodToSnakeInterface $methodToSnake,
         private readonly string $dateFormat = 'Y-m-d H:i:s',
         private readonly string $boolTrue = 'true',
         private readonly string $boolFalse = 'false',
+        private readonly string $csvDelimiter = ',',
+        private readonly string $csvEnclosure = '"',
+        private readonly string $csvEscape = '\\',
+        private readonly bool $csvBom = false,
     ) {
+        // Kept in the signature for constructor compatibility. A fresh Spreadsheet
+        // is created inside every XLSX response instead of retaining this instance.
+        unset($spreadsheet);
     }
 
     public function export(Query $query, array $methods, string $fileName, string $fileType): StreamedResponse
     {
-        $results = $this->getResults($query);
+        $methods = array_values($methods);
         $translatedHeaders = $this->getTranslatedHeaders($methods);
 
-        return match ($fileType) {
-            self::XLSX => $this->exportXlsx($results, $translatedHeaders, $methods, $fileName),
-            self::CSV => $this->exportCsv($results, $translatedHeaders, $methods, $fileName),
+        return match (strtolower($fileType)) {
+            self::XLSX => $this->exportXlsx($query, $translatedHeaders, $methods, $fileName),
+            self::CSV => $this->exportCsv($query, $translatedHeaders, $methods, $fileName),
             default => throw new InvalidArgumentException(sprintf('Unsupported file type %s', $fileType)),
         };
     }
 
-    /**
-     * @param array<string> $methods
-     * @param array<object> $results
-     * @param array<string> $translatedHeaders
+    /** @param list<string> $methods
+     * @param list<string> $translatedHeaders
      */
-    private function exportXlsx(array $results, array $translatedHeaders, array $methods, string $fileName): StreamedResponse
+    private function exportXlsx(Query $query, array $translatedHeaders, array $methods, string $fileName): StreamedResponse
     {
-        $sheet = $this->spreadsheet->getActiveSheet();
-        $this->writeHeadersToSheet($sheet, $translatedHeaders);
-        $this->writeValuesToSheet($sheet, $this->formatValues($results, $methods));
+        return new StreamedResponse(function () use ($query, $translatedHeaders, $methods): void {
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            foreach ($translatedHeaders as $column => $header) {
+                $sheet->setCellValue(Coordinate::stringFromColumnIndex($column + 1) . '1', $header);
+            }
 
-        return $this->createStreamedResponse($fileName);
+            $row = 2;
+            foreach ($query->toIterable() as $entity) {
+                if (!is_object($entity)) {
+                    throw new InvalidArgumentException('Expected query results to contain objects.');
+                }
+                foreach ($this->formatEntity($entity, $methods) as $column => $value) {
+                    $sheet->setCellValue(Coordinate::stringFromColumnIndex($column + 1) . $row, $value);
+                }
+                ++$row;
+            }
+
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+        }, 200, $this->getXlsxHeaders($fileName));
     }
 
-    /**
-     * @param array<string> $methods
-     * @param array<object> $results
-     * @param array<string> $translatedHeaders
+    /** @param list<string> $methods
+     * @param list<string> $translatedHeaders
      */
-    private function exportCsv(array $results, array $translatedHeaders, array $methods, string $fileName): StreamedResponse
+    private function exportCsv(Query $query, array $translatedHeaders, array $methods, string $fileName): StreamedResponse
     {
-        return new StreamedResponse(function () use ($results, $translatedHeaders, $methods) {
+        return new StreamedResponse(function () use ($query, $translatedHeaders, $methods): void {
             $handle = fopen('php://output', 'w');
             if (false === $handle) {
                 throw new RuntimeException('Could not open output stream.');
             }
 
-            fputcsv($handle, $translatedHeaders, ',', '"', '\\');
+            if ($this->csvBom) {
+                fwrite($handle, "\xEF\xBB\xBF");
+            }
+            fputcsv($handle, $translatedHeaders, $this->csvDelimiter, $this->csvEnclosure, $this->csvEscape);
 
-            foreach ($this->formatValues($results, $methods) as $row) {
-                fputcsv($handle, $row, ',', '"', '\\');
+            foreach ($query->toIterable() as $entity) {
+                if (!is_object($entity)) {
+                    throw new InvalidArgumentException('Expected query results to contain objects.');
+                }
+                fputcsv($handle, $this->formatEntity($entity, $methods), $this->csvDelimiter, $this->csvEnclosure, $this->csvEscape);
             }
 
             fclose($handle);
         }, 200, $this->getCsvHeaders($fileName));
     }
 
-    /**
-     * @return array<int, object>
-     */
-    private function getResults(Query $query): array
-    {
-        $results = $query->getResult();
-        if (!is_array($results)) {
-            throw new InvalidArgumentException('Expected query result to be an array.');
-        }
-
-        if ([] === $results) {
-            throw new InvalidArgumentException('There are no results to export');
-        }
-
-        return $results;
-    }
-
-    /**
-     * @param array<string> $methods
-     *
-     * @return array<string>
+    /** @param list<string> $methods
+     * @return list<string>
      */
     private function getTranslatedHeaders(array $methods): array
     {
-        return array_map(fn (string $method) => $this->translator->trans('import_export.' . $this->methodToSnake->convert($method), [], 'messages'), $methods);
+        return array_map(fn (string $method): string => $this->translator->trans('import_export.' . $this->methodToSnake->convert($method), [], 'messages'), $methods);
     }
 
-    /**
-     * @param array<string> $headers
-     */
-    private function writeHeadersToSheet(Worksheet $sheet, array $headers): void
-    {
-        foreach ($headers as $col => $header) {
-            $cell = Coordinate::stringFromColumnIndex($col + 1) . '1';
-            $sheet->setCellValue($cell, $header);
-        }
-    }
-
-    /**
-     * @param array<array<string>> $values
-     */
-    private function writeValuesToSheet(Worksheet $sheet, array $values): void
-    {
-        foreach ($values as $row => $value) {
-            foreach ($value as $col => $val) {
-                $cell = Coordinate::stringFromColumnIndex($col + 1) . ($row + 2);
-                $sheet->setCellValue($cell, $val);
-            }
-        }
-    }
-
-    private function createStreamedResponse(string $fileName): StreamedResponse
-    {
-        $response = new StreamedResponse(function () {
-            $writer = new Xlsx($this->spreadsheet);
-            $writer->save('php://output');
-        });
-
-        $headers = $this->getXlsxHeaders($fileName);
-        $response->headers->add($headers);
-
-        return $response;
-    }
-
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     private function getXlsxHeaders(string $fileName): array
     {
         return [
@@ -169,35 +138,28 @@ class Exporter implements ExporterInterface
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     private function getCsvHeaders(string $fileName): array
     {
         return [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => sprintf('attachment;filename="%s.csv"', $fileName),
             'Cache-Control' => 'max-age=0',
         ];
     }
 
-    /**
-     * @param array<object> $values
-     * @param array<string> $methods
-     *
-     * @return array<array<string>>
+    /** @param list<string> $methods
+     * @return list<string>
      */
-    private function formatValues(array $values, array $methods): array
+    private function formatEntity(object $entity, array $methods): array
     {
-        return array_map(function ($entity) use ($methods) {
-            return array_map(function (string $method) use ($entity) {
-                if (!method_exists($entity, $method)) {
-                    throw new InvalidArgumentException(sprintf('Method %s does not exist on entity %s', $method, get_class($entity)));
-                }
+        return array_map(function (string $method) use ($entity): string {
+            if (!method_exists($entity, $method)) {
+                throw new InvalidArgumentException(sprintf('Method %s does not exist on entity %s', $method, get_class($entity)));
+            }
 
-                return $this->formatValue($entity->$method());
-            }, $methods);
-        }, $values);
+            return $this->formatValue($entity->$method());
+        }, $methods);
     }
 
     private function formatValue(mixed $value): string
@@ -205,9 +167,9 @@ class Exporter implements ExporterInterface
         return match (true) {
             null === $value => '',
             is_bool($value) => $value ? $this->boolTrue : $this->boolFalse,
-            is_array($value) => implode(', ', $value),
+            is_array($value) => implode(', ', array_map($this->formatValue(...), $value)),
             $value instanceof DateTimeInterface => $value->format($this->dateFormat),
-            $value instanceof ArrayCollection || $value instanceof PersistentCollection => implode(', ', $value->toArray()),
+            $value instanceof Collection => implode(', ', array_map($this->formatValue(...), $value->toArray())),
             is_scalar($value) => (string) $value,
             is_object($value) => method_exists($value, '__toString') ? (string) $value : throw new InvalidArgumentException(sprintf('Cannot cast object of class %s to string', get_class($value))),
             default => throw new InvalidArgumentException(sprintf('Cannot cast value of type %s to string', gettype($value))),
