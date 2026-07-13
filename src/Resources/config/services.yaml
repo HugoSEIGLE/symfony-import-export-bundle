@@ -1,17 +1,13 @@
 services:
-    PhpOffice\PhpSpreadsheet\Spreadsheet:
-        class: PhpOffice\PhpSpreadsheet\Spreadsheet
-        shared: false
-    SymfonyImportExportBundle\Services\MethodToSnakeInterface:
-        class: SymfonyImportExportBundle\Services\MethodToSnake
+    HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnakeInterface:
+        class: HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnake
 
-    SymfonyImportExportBundle\Services\Export\ExporterInterface:
-        alias: SymfonyImportExportBundle\Services\Export\Exporter
+    HugoSEIGLE\SymfonyImportExportBundle\Services\Export\ExporterInterface:
+        alias: HugoSEIGLE\SymfonyImportExportBundle\Services\Export\Exporter
 
-    SymfonyImportExportBundle\Services\Export\Exporter:
+    HugoSEIGLE\SymfonyImportExportBundle\Services\Export\Exporter:
         arguments:
-            $spreadsheet: '@PhpOffice\PhpSpreadsheet\Spreadsheet'
-            $methodToSnake: '@SymfonyImportExportBundle\Services\MethodToSnakeInterface'
+            $methodToSnake: '@HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnakeInterface'
             $dateFormat: '%import_export.date_format%'
             $boolTrue: '%import_export.bool_true%'
             $boolFalse: '%import_export.bool_false%'
@@ -22,26 +18,29 @@ services:
         autowire: true
         autoconfigure: true
 
-    SymfonyImportExportBundle\Services\Import\ImporterInterface:
-        alias: SymfonyImportExportBundle\Services\Import\Importer
+    HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterInterface:
+        alias: HugoSEIGLE\SymfonyImportExportBundle\Services\Import\Importer
 
-    SymfonyImportExportBundle\Services\Import\Importer:
+    HugoSEIGLE\SymfonyImportExportBundle\Services\Import\Importer:
         arguments:
+            $importers: '%import_export.importers%'
+            $dateFormat: '%import_export.date_format%'
             $boolTrue: '%import_export.bool_true%'
             $boolFalse: '%import_export.bool_false%'
             $validateHeaders: '%import_export.validate_headers%'
             $csvDelimiter: '%import_export.csv.delimiter%'
             $csvEnclosure: '%import_export.csv.enclosure%'
             $csvEscape: '%import_export.csv.escape%'
-            $methodToSnake: '@SymfonyImportExportBundle\Services\MethodToSnakeInterface'
+            $methodToSnake: '@HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnakeInterface'
         autowire: true
         autoconfigure: true
 
-    SymfonyImportExportBundle\Services\Import\ImporterTemplateInterface:
-        alias: SymfonyImportExportBundle\Services\Import\ImporterTemplate
+    HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterTemplateInterface:
+        alias: HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterTemplate
 
-    SymfonyImportExportBundle\Services\Import\ImporterTemplate:
+    HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterTemplate:
         arguments:
+            $importers: '%import_export.importers%'
             $csvDelimiter: '%import_export.csv.delimiter%'
             $csvEnclosure: '%import_export.csv.enclosure%'
             $csvEscape: '%import_export.csv.escape%'

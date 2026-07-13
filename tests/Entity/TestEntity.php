@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Tests\Entity;
+namespace HugoSEIGLE\SymfonyImportExportBundle\Tests\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
-class TestEntity implements TestEntityInterface
+class TestEntity
 {
     private ?int $id = null;
     private ?string $name = null;
@@ -109,14 +109,14 @@ class TestEntity implements TestEntityInterface
         return $this->relatedEntities;
     }
 
-    public function addRelatedEntity(TestEntityInterface $entity): void
+    public function addRelatedEntity(self $entity): void
     {
         if (!$this->relatedEntities->contains($entity)) {
             $this->relatedEntities->add($entity);
         }
     }
 
-    public function removeRelatedEntity(TestEntityInterface $entity): void
+    public function removeRelatedEntity(self $entity): void
     {
         $this->relatedEntities->removeElement($entity);
     }

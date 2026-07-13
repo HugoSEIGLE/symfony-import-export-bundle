@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Services\Import;
+namespace HugoSEIGLE\SymfonyImportExportBundle\Services\Import;
 
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
