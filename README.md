@@ -70,7 +70,7 @@ public function exportData(ExporterInterface $exporter): Response
 {
     $query = $this->productRepository->yourQueryMethod();
 
-    return $exporter->exportCsv($query, ['getName', 'getDescription', ...], 'fileName', ExporterInterface::XLSX); // or 'csv'
+    return $exporter->export($query, ['getName', 'getDescription', ...], 'fileName', ExporterInterface::XLSX); // or 'csv'
 }
 ```
 
