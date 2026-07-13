@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Tests\Services\Import;
+namespace HugoSEIGLE\SymfonyImportExportBundle\Tests\Services\Import;
 
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -15,14 +15,12 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use SymfonyImportExportBundle\Services\Import\ImportResult;
-use SymfonyImportExportBundle\Services\Import\Importer;
-use SymfonyImportExportBundle\Tests\Entity\TestEntity;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\Importer;
+use HugoSEIGLE\SymfonyImportExportBundle\Tests\Entity\TestEntity;
 
 use function file_put_contents;
 use function sys_get_temp_dir;
@@ -38,7 +36,6 @@ final class ImporterTest extends TestCase
 {
     private EntityManagerInterface&MockObject $entityManager;
     private FormFactoryInterface&MockObject $formFactory;
-    private ParameterBagInterface&MockObject $parameterBag;
     private ClassMetadata $metadata;
 
     /** @var array<string, mixed> */
@@ -53,15 +50,6 @@ final class ImporterTest extends TestCase
         $this->formFactory = $this->createMock(FormFactoryInterface::class);
         $translator = $this->createMock(TranslatorInterface::class);
         $translator->method('trans')->willReturnArgument(0);
-        $this->parameterBag = $this->createMock(ParameterBagInterface::class);
-        $this->parameterBag->method('get')->willReturnCallback(function (string $name): mixed {
-            return match ($name) {
-                'import_export.importers' => [TestEntity::class => $this->config],
-                'import_export.date_format' => 'Y-m-d',
-                default => null,
-            };
-        });
-
         $this->metadata = new ClassMetadata(TestEntity::class);
         $this->entityManager->method('getClassMetadata')->willReturnCallback(fn (): ClassMetadata => $this->metadata);
     }
@@ -119,15 +107,15 @@ final class ImporterTest extends TestCase
         $this->metadata->mapField(['fieldName' => 'active', 'type' => 'boolean']);
         $this->configure(['active']);
         $importer = $this->importer();
-        $importer->import($this->file("active\ninvalid\n"), TestEntity::class, 'form');
-        self::assertFalse($importer->isValid());
+        $firstResult = $importer->import($this->file("active\ninvalid\n"), TestEntity::class, 'form');
+        self::assertFalse($firstResult->isValid());
 
         $this->formFactory->method('create')->willReturn($this->validForm());
         $secondResult = $importer->import($this->file("active\nfalse\n"), TestEntity::class, 'form');
 
         self::assertTrue($secondResult->isValid());
-        self::assertSame([], $importer->getErrors());
-        self::assertCount(1, $importer->getSummary()['created']);
+        self::assertSame([], $secondResult->getErrors());
+        self::assertCount(1, $secondResult->getCreatedEntities());
     }
 
     public function testUppercaseCsvExtensionIsAccepted(): void
@@ -344,7 +332,13 @@ final class ImporterTest extends TestCase
 
     private function importer(): Importer
     {
-        return new Importer($this->entityManager, $this->formFactory, $this->translator(), $this->parameterBag);
+        return new Importer(
+            $this->entityManager,
+            $this->formFactory,
+            $this->translator(),
+            [TestEntity::class => $this->config],
+            'Y-m-d',
+        );
     }
 
     private function translator(): TranslatorInterface

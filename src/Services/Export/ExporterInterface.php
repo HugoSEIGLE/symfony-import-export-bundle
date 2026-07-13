@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Services\Export;
+namespace HugoSEIGLE\SymfonyImportExportBundle\Services\Export;
 
 use Doctrine\ORM\Query;
 use Symfony\Component\HttpFoundation\StreamedResponse;

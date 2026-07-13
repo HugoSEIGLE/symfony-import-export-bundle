@@ -1,21 +1,21 @@
 [![Packagist Version](https://img.shields.io/packagist/v/hugoseigle/symfony-import-export-bundle)](https://packagist.org/packages/hugoseigle/symfony-import-export-bundle)
 [![Total Downloads](https://img.shields.io/packagist/dt/hugoseigle/symfony-import-export-bundle)](https://packagist.org/packages/hugoseigle/symfony-import-export-bundle)
 
-# Symfony ImportExportBundle
+# Symfony ImportExportBundle 2
 
 Import and export Doctrine entities as CSV or XLSX using Symfony forms for import validation. The bundle supports PHP 8.1+, Symfony 6.4/7/8, Doctrine ORM 3 and PhpSpreadsheet 2.
 
 ## Installation
 
 ```bash
-composer require hugoseigle/symfony-import-export-bundle
+composer require hugoseigle/symfony-import-export-bundle:^2.0
 ```
 
 If Symfony Flex does not register the bundle automatically, add it to `config/bundles.php`:
 
 ```php
 return [
-    SymfonyImportExportBundle\SymfonyImportExportBundle::class => ['all' => true],
+    HugoSEIGLE\SymfonyImportExportBundle\SymfonyImportExportBundle::class => ['all' => true],
 ];
 ```
 
@@ -107,8 +107,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
-use SymfonyImportExportBundle\Services\Import\ImportError;
-use SymfonyImportExportBundle\Services\Import\ImporterInterface;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImportError;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterInterface;
 
 final class ProductImportController extends AbstractController
 {
@@ -192,25 +192,12 @@ Excel represents native logical values as `TRUE` and `FALSE` ([Microsoft documen
 
 For XLSX files, native boolean cells are returned by PhpSpreadsheet as PHP booleans rather than strings. The importer normalizes them to the configured `bool_true`/`bool_false` tokens before validation. Consequently both native Excel booleans and textual uppercase values are supported. For custom tokens such as `yes`/`no`, native cells still work; textual cells must contain those configured tokens.
 
-### Backward-compatible accessors
-
-The stateful accessors remain temporarily available:
-
-```php
-$importer->getErrors();  // list<string>, deprecated
-$importer->isValid();    // deprecated
-$importer->getSummary(); // ['created' => [...], 'updated' => [...], 'deleted' => [...]], deprecated
-$importer->getResult();  // the latest ImportResult
-```
-
-They are reset at the beginning of every `import()` call. New code should retain the returned `ImportResult` instead.
-
 ## Exporting
 
 Pass a Doctrine ORM `Query`, getter methods in column order, a base filename, and a type:
 
 ```php
-use SymfonyImportExportBundle\Services\Export\ExporterInterface;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Export\ExporterInterface;
 
 public function export(ExporterInterface $exporter): Response
 {
@@ -233,8 +220,8 @@ Headers use translation keys derived from method names, for example `getAvailabl
 
 ```php
 use App\Entity\Product;
-use SymfonyImportExportBundle\Services\Import\ImporterInterface;
-use SymfonyImportExportBundle\Services\Import\ImporterTemplateInterface;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterInterface;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterTemplateInterface;
 
 public function template(ImporterTemplateInterface $templates): Response
 {
@@ -278,13 +265,17 @@ Association values are passed to the Symfony form. Configure an appropriate form
 - Process large persistence batches in application code and periodically `flush()`/`clear()` when atomicity is not required.
 - XLSX reading uses data-only mode and releases worksheets after iteration, but large workbooks still require substantially more memory than CSV.
 
-## Compatibility and migration
+## Upgrading from 1.x
 
-PHP 8.1 is the minimum required by the source and the lowest supported releases of Doctrine ORM 3, PhpSpreadsheet 2, PHPUnit 10 and Symfony 6.4. Symfony 7 and 8 are selected by Composer only on PHP versions satisfying their own constraints (Symfony 8 currently requires a newer PHP runtime).
+Version 2 uses the canonical namespace `HugoSEIGLE\SymfonyImportExportBundle\...`. Replace imports from the former `SymfonyImportExportBundle\...` namespace, including the bundle class in `config/bundles.php` and injected service interfaces.
 
-The only source-level API evolution is that `ImporterInterface::import()` now returns `ImportResult` instead of `void`. Existing callers that ignore the return value continue to work. Custom third-party implementations of `ImporterInterface` must update their return type and implement `getResult()`. The legacy result accessors remain available and deprecated to ease migration.
+`ImporterInterface::import()` returns an `ImportResult`. The deprecated stateful methods from 1.x (`getErrors()`, `isValid()`, `getSummary()` and `getResult()`) have been removed; use only the returned result object.
 
-The canonical namespace remains `SymfonyImportExportBundle\...`. Renaming it to `HugoSEIGLE\...` in the current major would break PHP imports, Symfony service identifiers, autowiring and existing `config/bundles.php` files. Such a rename should only be introduced in a new major release with an explicit compatibility layer and migration guide.
+The importer itself is stateless in 2.x. Configuration is injected directly by Symfony instead of being read through `ParameterBagInterface`. The unused `Spreadsheet` constructor argument on `Exporter` has also been removed. These constructor changes matter only when instantiating concrete services manually; normal applications should inject their interfaces.
+
+## Compatibility
+
+PHP 8.1 is the minimum required by the source and the lowest supported releases of Doctrine ORM 3, PhpSpreadsheet 2, PHPUnit 10 and Symfony 6.4. Symfony 7 and 8 are selected by Composer only on PHP versions satisfying their own constraints.
 
 ## Development
 

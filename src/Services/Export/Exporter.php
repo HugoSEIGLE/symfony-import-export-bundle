@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Services\Export;
+namespace HugoSEIGLE\SymfonyImportExportBundle\Services\Export;
 
 use DateTimeInterface;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Query;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 use InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -14,7 +15,6 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 
 use function array_map;
 use function array_values;
@@ -36,7 +36,6 @@ use function strtolower;
 class Exporter implements ExporterInterface
 {
     public function __construct(
-        Spreadsheet $spreadsheet,
         private readonly TranslatorInterface $translator,
         private readonly MethodToSnakeInterface $methodToSnake,
         private readonly string $dateFormat = 'Y-m-d H:i:s',
@@ -47,9 +46,6 @@ class Exporter implements ExporterInterface
         private readonly string $csvEscape = '\\',
         private readonly bool $csvBom = false,
     ) {
-        // Kept in the signature for constructor compatibility. A fresh Spreadsheet
-        // is created inside every XLSX response instead of retaining this instance.
-        unset($spreadsheet);
     }
 
     public function export(Query $query, array $methods, string $fileName, string $fileType): StreamedResponse

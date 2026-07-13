@@ -22,26 +22,25 @@
         "phpoffice/phpspreadsheet": "^2.3.5",
         "symfony/form": "^6.4 || ^7.1 || ^8.0",
         "symfony/framework-bundle": "^6.4 || ^7.1 || ^8.0",
-        "symfony/translation": "^6.4 || ^7.1 || ^8.0"
+        "symfony/translation-contracts": "^2.5 || ^3.0"
     },
     "require-dev": {
         "ergebnis/composer-normalize": "^2.52",
         "friendsofphp/php-cs-fixer": "^3.64",
         "phpro/grumphp": "^2.17",
         "phpstan/phpstan": "^2.2",
-        "phpunit/phpunit": "^10.5",
-        "symfony/test-pack": "^1.0"
+        "phpunit/phpunit": "^10.5"
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
-            "SymfonyImportExportBundle\\": "src/"
+            "HugoSEIGLE\\SymfonyImportExportBundle\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "SymfonyImportExportBundle\\Tests\\": "tests/"
+            "HugoSEIGLE\\SymfonyImportExportBundle\\Tests\\": "tests/"
         }
     },
     "config": {
@@ -52,7 +51,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "1.x-dev"
+            "dev-main": "2.x-dev"
         },
         "symfony": {
             "allow-contrib": false,

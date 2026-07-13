@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Services\Import;
+namespace HugoSEIGLE\SymfonyImportExportBundle\Services\Import;
 
 use BackedEnum;
 use DateTime;
@@ -10,15 +10,14 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Generator;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 use InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 use Throwable;
 
 use function array_combine;
@@ -51,13 +50,13 @@ use const PATHINFO_EXTENSION;
 
 class Importer implements ImporterInterface
 {
-    private ImportResult $result;
-
+    /** @param array<class-string, array<mixed, mixed>> $importers */
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly FormFactoryInterface $formFactory,
         private readonly TranslatorInterface $translator,
-        private readonly ParameterBagInterface $parameterBag,
+        private readonly array $importers,
+        private readonly string $dateFormat = 'Y-m-d H:i:s',
         private readonly string $boolTrue = 'true',
         private readonly string $boolFalse = 'false',
         private readonly bool $validateHeaders = true,
@@ -66,7 +65,6 @@ class Importer implements ImporterInterface
         private readonly string $csvEscape = '\\',
         private readonly ?MethodToSnakeInterface $methodToSnake = null,
     ) {
-        $this->result = new ImportResult();
     }
 
     /**
@@ -84,22 +82,17 @@ class Importer implements ImporterInterface
         bool $allowCreate = true,
         bool $allowUpdate = true,
     ): ImportResult {
-        // Importer is a shared service: never leak data from a previous call.
-        $this->result = new ImportResult();
+        $result = new ImportResult();
 
         if (!class_exists($entityClass)) {
             throw new InvalidArgumentException($this->translate('import_export.invalid_entity'));
         }
 
-        $importers = $this->parameterBag->get('import_export.importers');
-        if (!is_array($importers) || !array_key_exists($entityClass, $importers)) {
+        if (!array_key_exists($entityClass, $this->importers)) {
             throw new InvalidArgumentException(sprintf('No import configuration found for entity %s.', $entityClass));
         }
 
-        $config = $importers[$entityClass];
-        if (!is_array($config)) {
-            throw new InvalidArgumentException(sprintf('Invalid import configuration for entity %s.', $entityClass));
-        }
+        $config = $this->importers[$entityClass];
         $fields = $this->getConfiguredFields($config);
         $uniqueFields = $this->getStringList($config['unique_fields'] ?? []);
         $validateHeaders = $config['validate_headers'] ?? $this->validateHeaders;
@@ -113,22 +106,22 @@ class Importer implements ImporterInterface
             if (!$hasHeader) {
                 $hasHeader = true;
                 if ($validateHeaders && !$this->headersAreValid($row, $fields)) {
-                    $this->addError(1, null, sprintf(
+                    $this->addError($result, 1, null, sprintf(
                         'Invalid headers. Expected [%s], got [%s].',
                         implode(', ', $this->getExpectedHeaders($fields)),
                         implode(', ', $row),
                     ), $row);
 
-                    return $this->result;
+                    return $result;
                 }
 
                 continue;
             }
 
             $rowNumber = $fileRow + 1;
-            $errorCount = $this->result->getErrorCount();
-            $rowData = $this->combineRowData($fields, array_map(static fn (string $value): string => trim($value), $row), $rowNumber);
-            if ($this->result->getErrorCount() > $errorCount) {
+            $errorCount = $result->getErrorCount();
+            $rowData = $this->combineRowData($result, $fields, array_map(static fn (string $value): string => trim($value), $row), $rowNumber);
+            if ($result->getErrorCount() > $errorCount) {
                 continue;
             }
 
@@ -136,8 +129,8 @@ class Importer implements ImporterInterface
                 continue;
             }
 
-            $rowData = $this->formatRowData($rowData, $entityClass, $rowNumber);
-            if ($this->result->getErrorCount() > $errorCount) {
+            $rowData = $this->formatRowData($result, $rowData, $entityClass, $rowNumber);
+            if ($result->getErrorCount() > $errorCount) {
                 continue;
             }
 
@@ -148,13 +141,13 @@ class Importer implements ImporterInterface
             $form->submit($rowData);
 
             if (!$form->isValid()) {
-                $this->collectFormErrors($form, $rowNumber, $rowData);
+                $this->collectFormErrors($result, $form, $rowNumber, $rowData);
                 continue;
             }
 
             $entity = $form->getData();
             if (!is_object($entity)) {
-                $this->addError($rowNumber, null, $this->translate('import_export.invalid_entity_data'));
+                $this->addError($result, $rowNumber, null, $this->translate('import_export.invalid_entity_data'));
                 continue;
             }
 
@@ -162,33 +155,33 @@ class Importer implements ImporterInterface
             if (null !== $existingEntity) {
                 if (true === $deleted) {
                     if (!$allowDelete) {
-                        $this->addOperationNotAllowedError($rowNumber, 'delete');
+                        $this->addOperationNotAllowedError($result, $rowNumber, 'delete');
                     } else {
-                        $this->result->addDeletedEntity($existingEntity);
+                        $result->addDeletedEntity($existingEntity);
                     }
                 } elseif (!$allowUpdate) {
-                    $this->addOperationNotAllowedError($rowNumber, 'update');
+                    $this->addOperationNotAllowedError($result, $rowNumber, 'update');
                 } else {
-                    $this->updateEntity($entity, $existingEntity, $fields);
+                    $this->updateEntity($result, $entity, $existingEntity, $fields);
                 }
             } elseif (true === $deleted) {
                 if (!$allowDelete) {
-                    $this->addOperationNotAllowedError($rowNumber, 'delete');
+                    $this->addOperationNotAllowedError($result, $rowNumber, 'delete');
                 } else {
-                    $this->addError($rowNumber, 'deleted', $this->translate('import_export.deleted_entity_not_found'), $deleted);
+                    $this->addError($result, $rowNumber, 'deleted', $this->translate('import_export.deleted_entity_not_found'), $deleted);
                 }
             } elseif (!$allowCreate) {
-                $this->addOperationNotAllowedError($rowNumber, 'create');
+                $this->addOperationNotAllowedError($result, $rowNumber, 'create');
             } else {
-                $this->result->addCreatedEntity($entity);
+                $result->addCreatedEntity($entity);
             }
         }
 
         if (!$hasHeader) {
-            $this->addError(1, null, $this->translate('import_export.empty_file'));
+            $this->addError($result, 1, null, $this->translate('import_export.empty_file'));
         }
 
-        return $this->result;
+        return $result;
     }
 
     /** @param array<mixed, mixed> $config
@@ -266,10 +259,10 @@ class Importer implements ImporterInterface
      *
      * @return array<string, string>
      */
-    private function combineRowData(array $fields, array $row, int $rowNumber): array
+    private function combineRowData(ImportResult $result, array $fields, array $row, int $rowNumber): array
     {
         if (count($fields) !== count($row)) {
-            $this->addError($rowNumber, null, sprintf('Expected %d columns, got %d.', count($fields), count($row)), $row);
+            $this->addError($result, $rowNumber, null, sprintf('Expected %d columns, got %d.', count($fields), count($row)), $row);
 
             return [];
         }
@@ -280,19 +273,19 @@ class Importer implements ImporterInterface
     /** @param array<string, string> $rowData
      * @return array<string, mixed>
      */
-    private function formatRowData(array $rowData, string $entityClass, int $rowNumber): array
+    private function formatRowData(ImportResult $result, array $rowData, string $entityClass, int $rowNumber): array
     {
         $metadata = $this->entityManager->getClassMetadata($entityClass);
         foreach ($rowData as $field => &$value) {
             $type = $metadata->hasField($field) ? $metadata->getTypeOfField($field) : null;
 
             if ('deleted' === $field || 'boolean' === $type) {
-                $value = $this->parseBoolean($value, $rowNumber, $field);
+                $value = $this->parseBoolean($result, $value, $rowNumber, $field);
                 continue;
             }
 
             if (in_array($type, ['date', 'datetime', 'date_immutable', 'datetime_immutable'], true)) {
-                $value = $this->parseDate($value, (string) $type, $rowNumber, $field);
+                $value = $this->parseDate($result, $value, (string) $type, $rowNumber, $field);
                 continue;
             }
 
@@ -305,7 +298,7 @@ class Importer implements ImporterInterface
                     try {
                         $value = $enumClass::from($value);
                     } catch (Throwable) {
-                        $this->addError($rowNumber, $field, sprintf('Invalid enum value for field "%s".', $field), $value);
+                        $this->addError($result, $rowNumber, $field, sprintf('Invalid enum value for field "%s".', $field), $value);
                     }
                     continue;
                 }
@@ -320,7 +313,7 @@ class Importer implements ImporterInterface
         return $rowData;
     }
 
-    private function parseBoolean(string $value, int $rowNumber, string $field): ?bool
+    private function parseBoolean(ImportResult $result, string $value, int $rowNumber, string $field): ?bool
     {
         $normalized = strtolower(trim($value));
         if ($normalized === strtolower(trim($this->boolTrue))) {
@@ -330,29 +323,22 @@ class Importer implements ImporterInterface
             return false;
         }
 
-        $this->addError($rowNumber, $field, sprintf('Invalid boolean value. Expected "%s" or "%s".', $this->boolTrue, $this->boolFalse), $value);
+        $this->addError($result, $rowNumber, $field, sprintf('Invalid boolean value. Expected "%s" or "%s".', $this->boolTrue, $this->boolFalse), $value);
 
         return null;
     }
 
-    private function parseDate(string $value, string $type, int $rowNumber, string $field): ?DateTimeInterface
+    private function parseDate(ImportResult $result, string $value, string $type, int $rowNumber, string $field): ?DateTimeInterface
     {
         if ('' === $value) {
             return null;
         }
 
-        $dateFormat = $this->parameterBag->get('import_export.date_format');
-        if (!is_string($dateFormat)) {
-            $this->addError($rowNumber, $field, $this->translate('import_export.invalid_date_format'), $value);
-
-            return null;
-        }
-
         $immutable = str_ends_with($type, '_immutable');
-        $date = $immutable ? DateTimeImmutable::createFromFormat('!' . $dateFormat, $value) : DateTime::createFromFormat('!' . $dateFormat, $value);
+        $date = $immutable ? DateTimeImmutable::createFromFormat('!' . $this->dateFormat, $value) : DateTime::createFromFormat('!' . $this->dateFormat, $value);
         $parseErrors = DateTimeImmutable::getLastErrors();
         if (false === $date || (false !== $parseErrors && (0 < $parseErrors['warning_count'] || 0 < $parseErrors['error_count']))) {
-            $this->addError($rowNumber, $field, $this->translate('import_export.invalid_datetime', ['%field%' => $field]), $value);
+            $this->addError($result, $rowNumber, $field, $this->translate('import_export.invalid_datetime', ['%field%' => $field]), $value);
 
             return null;
         }
@@ -371,7 +357,7 @@ class Importer implements ImporterInterface
     }
 
     /** @param list<string> $fields */
-    private function updateEntity(object $entity, object $existingEntity, array $fields): void
+    private function updateEntity(ImportResult $result, object $entity, object $existingEntity, array $fields): void
     {
         $metadata = $this->entityManager->getClassMetadata(get_class($existingEntity));
         foreach ($fields as $field) {
@@ -380,7 +366,7 @@ class Importer implements ImporterInterface
             }
         }
 
-        $this->result->addUpdatedEntity($existingEntity);
+        $result->addUpdatedEntity($existingEntity);
     }
 
     /** @param list<string> $uniqueFields
@@ -461,21 +447,21 @@ class Importer implements ImporterInterface
     /** @param FormInterface<object> $form
      * @param array<string, mixed> $rowData
      */
-    private function collectFormErrors(FormInterface $form, int $rowNumber, array $rowData): void
+    private function collectFormErrors(ImportResult $result, FormInterface $form, int $rowNumber, array $rowData): void
     {
         foreach ($form->getErrors(true) as $error) {
             /** @var FormError $error */
             $field = $error->getOrigin()?->getName();
-            $this->addError($rowNumber, $field, $error->getMessage(), null === $field ? null : ($rowData[$field] ?? null));
+            $this->addError($result, $rowNumber, $field, $error->getMessage(), null === $field ? null : ($rowData[$field] ?? null));
         }
     }
 
-    private function addError(int $row, ?string $field, string $message, mixed $value = null): void
+    private function addError(ImportResult $result, int $row, ?string $field, string $message, mixed $value = null): void
     {
-        $this->result->addError(new ImportError($row, $field, $message, $value));
+        $result->addError(new ImportError($row, $field, $message, $value));
     }
 
-    private function addOperationNotAllowedError(int $row, string $operation): void
+    private function addOperationNotAllowedError(ImportResult $result, int $row, string $operation): void
     {
         $key = 'import_export.operation_not_allowed';
         $message = $this->translate($key, ['%operation%' => $operation]);
@@ -484,6 +470,7 @@ class Importer implements ImporterInterface
         }
 
         $this->addError(
+            $result,
             $row,
             null,
             $message,
@@ -495,32 +482,5 @@ class Importer implements ImporterInterface
     private function translate(string $key, array $parameters = []): string
     {
         return $this->translator->trans($key, $parameters, 'messages');
-    }
-
-    /** @deprecated since 1.1, use ImportResult::getErrors() for structured errors. */
-    public function getErrors(): array
-    {
-        return array_map(static fn (ImportError $error): string => (string) $error, $this->result->getErrors());
-    }
-
-    /** @deprecated since 1.1, use ImportResult::isValid(). */
-    public function isValid(): bool
-    {
-        return $this->result->isValid();
-    }
-
-    public function getResult(): ImportResult
-    {
-        return $this->result;
-    }
-
-    /** @deprecated since 1.1, use the typed entity getters on ImportResult. */
-    public function getSummary(): array
-    {
-        return [
-            'created' => $this->result->getCreatedEntities(),
-            'updated' => $this->result->getUpdatedEntities(),
-            'deleted' => $this->result->getDeletedEntities(),
-        ];
     }
 }

@@ -2,16 +2,15 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Services\Import;
+namespace HugoSEIGLE\SymfonyImportExportBundle\Services\Import;
 
+use HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 use InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 
 use function array_key_exists;
 use function array_map;
@@ -27,8 +26,9 @@ use function strtolower;
 
 class ImporterTemplate implements ImporterTemplateInterface
 {
+    /** @param array<class-string, array<mixed, mixed>> $importers */
     public function __construct(
-        private readonly ParameterBagInterface $parameterBag,
+        private readonly array $importers,
         private readonly TranslatorInterface $translator,
         private readonly MethodToSnakeInterface $methodToSnake,
         private readonly string $csvDelimiter = ',',
@@ -49,20 +49,11 @@ class ImporterTemplate implements ImporterTemplateInterface
             throw new InvalidArgumentException('Invalid file type.');
         }
 
-        $importersConfig = $this->parameterBag->get('import_export.importers');
-
-        if (!is_array($importersConfig)) {
-            throw new InvalidArgumentException('Importers configuration not found.');
-        }
-
-        if (!array_key_exists($class, $importersConfig)) {
+        if (!array_key_exists($class, $this->importers)) {
             throw new InvalidArgumentException('Class not found in importers configuration.');
         }
 
-        $importerConfig = $importersConfig[$class];
-        if (!is_array($importerConfig)) {
-            throw new InvalidArgumentException('Invalid importer configuration.');
-        }
+        $importerConfig = $this->importers[$class];
 
         $configuredFields = $importerConfig['fields'] ?? null;
         if (!is_array($configuredFields)) {

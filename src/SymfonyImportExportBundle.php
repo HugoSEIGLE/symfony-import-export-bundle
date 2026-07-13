@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle;
+namespace HugoSEIGLE\SymfonyImportExportBundle;
 
+use HugoSEIGLE\SymfonyImportExportBundle\DependencyInjection\SymfonyImportExportExtension;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
-use SymfonyImportExportBundle\DependencyInjection\SymfonyImportExportExtension;
 
 class SymfonyImportExportBundle extends Bundle
 {

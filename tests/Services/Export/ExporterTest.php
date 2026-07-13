@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Tests\Services\Export;
+namespace HugoSEIGLE\SymfonyImportExportBundle\Tests\Services\Export;
 
 use DateTime;
 use Doctrine\ORM\Query;
@@ -20,11 +20,11 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use SymfonyImportExportBundle\Services\Export\Exporter;
-use SymfonyImportExportBundle\Services\Export\ExporterInterface;
-use SymfonyImportExportBundle\Services\MethodToSnake;
-use SymfonyImportExportBundle\Services\MethodToSnakeInterface;
-use SymfonyImportExportBundle\Tests\Entity\TestEntity;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Export\Exporter;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Export\ExporterInterface;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnake;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnakeInterface;
+use HugoSEIGLE\SymfonyImportExportBundle\Tests\Entity\TestEntity;
 
 class ExporterTest extends TestCase
 {
@@ -33,8 +33,6 @@ class ExporterTest extends TestCase
 
     protected function setUp(): void
     {
-        $spreadsheet = new Spreadsheet();
-
         $translatorMock = $this->createMock(TranslatorInterface::class);
         $translatorMock->method('trans')->willReturnArgument(0);
 
@@ -42,7 +40,7 @@ class ExporterTest extends TestCase
 
         $this->methodToSnake = new MethodToSnake();
 
-        $this->exporter = new Exporter($spreadsheet, $translatorMock, $this->methodToSnake);
+        $this->exporter = new Exporter($translatorMock, $this->methodToSnake);
     }
 
     public function testExportToXlsxGeneratesCorrectResponse(): void

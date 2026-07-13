@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SymfonyImportExportBundle\Services;
+namespace HugoSEIGLE\SymfonyImportExportBundle\Services;
 
 use function preg_replace;
 use function strtolower;
