@@ -1,0 +1,11 @@
+import_export:
+    name: Name
+    email: Email
+    industry: Industry
+    employees: Employees
+    active: Active
+    get_name: Name
+    get_email: Email
+    get_industry: Industry
+    get_employees: Employees
+    is_active: Active

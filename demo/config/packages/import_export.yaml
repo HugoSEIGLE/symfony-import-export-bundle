@@ -1,0 +1,11 @@
+import_export:
+    date_format: 'Y-m-d'
+    bool_true: 'yes'
+    bool_false: 'no'
+    csv:
+        bom: true
+        escape: ''
+    importers:
+        App\Entity\Company:
+            fields: [name, email, industry, employees, active]
+            unique_fields: [email]

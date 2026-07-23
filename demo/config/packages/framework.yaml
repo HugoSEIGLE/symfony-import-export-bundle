@@ -1,0 +1,12 @@
+framework:
+    secret: '%env(APP_SECRET)%'
+    csrf_protection: true
+    form: true
+    http_method_override: false
+    router:
+        utf8: true
+    session: true
+    translator:
+        fallbacks: [en]
+    validation:
+        email_validation_mode: html5
