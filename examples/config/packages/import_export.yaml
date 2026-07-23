@@ -1,0 +1,6 @@
+import_export:
+    validate_headers: true
+    importers:
+        App\Entity\Company:
+            fields: [name, email, active]
+            unique_fields: [email]

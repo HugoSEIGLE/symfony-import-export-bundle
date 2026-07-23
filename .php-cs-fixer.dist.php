@@ -4,7 +4,14 @@ use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
 
 $finder = (new Finder())
-    ->in(__DIR__ . '/src')
+    ->in([
+        __DIR__ . '/demo/bin',
+        __DIR__ . '/demo/public',
+        __DIR__ . '/demo/src',
+        __DIR__ . '/examples',
+        __DIR__ . '/src',
+        __DIR__ . '/tests',
+    ])
     ->exclude([
         'config/secrets',
         'node_modules',

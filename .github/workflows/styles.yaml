@@ -1,14 +1,14 @@
-name: PHPStan Analysis
+name: Static analysis
 
 on:
+  push:
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   phpstan:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,11 +17,10 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
-          extensions: mbstring, intl
           coverage: none
 
       - name: Install dependencies
-        run: composer install --no-progress --prefer-dist --no-interaction
+        run: composer install --prefer-dist --no-progress --no-interaction
 
       - name: Run PHPStan
-        run: vendor/bin/phpstan analyse --level max src/
+        run: composer phpstan
