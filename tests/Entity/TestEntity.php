@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HugoSEIGLE\SymfonyImportExportBundle\Tests\Entity;
 
+use DateTimeInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
@@ -12,8 +13,8 @@ class TestEntity
     private ?int $id = null;
     private ?string $name = null;
     private ?string $email = null;
-    private ?\DateTimeInterface $createdAt = null;
-    private ?\DateTimeInterface $updatedAt = null;
+    private ?DateTimeInterface $createdAt = null;
+    private ?DateTimeInterface $updatedAt = null;
     private ?float $price = null;
     private array $tags = [];
     private bool $isActive = true;
@@ -54,22 +55,22 @@ class TestEntity
         $this->email = $email;
     }
 
-    public function getCreatedAt(): ?\DateTimeInterface
+    public function getCreatedAt(): ?DateTimeInterface
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeInterface $createdAt): void
+    public function setCreatedAt(DateTimeInterface $createdAt): void
     {
         $this->createdAt = $createdAt;
     }
 
-    public function getUpdatedAt(): ?\DateTimeInterface
+    public function getUpdatedAt(): ?DateTimeInterface
     {
         return $this->updatedAt;
     }
 
-    public function setUpdatedAt(\DateTimeInterface $updatedAt): void
+    public function setUpdatedAt(DateTimeInterface $updatedAt): void
     {
         $this->updatedAt = $updatedAt;
     }

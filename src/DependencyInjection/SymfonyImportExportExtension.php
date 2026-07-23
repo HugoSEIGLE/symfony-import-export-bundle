@@ -63,6 +63,6 @@ class SymfonyImportExportExtension extends Extension
 
     public function getNamespace(): string
     {
-        return $this->getXsdValidationBasePath();
+        return $this->getXsdValidationBasePath() . '/import_export';
     }
 }

@@ -9,6 +9,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\Persistence\Mapping\RuntimeReflectionService;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\Importer;
+use HugoSEIGLE\SymfonyImportExportBundle\Tests\Entity\TestEntity;
+use InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -19,10 +22,10 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\Importer;
-use HugoSEIGLE\SymfonyImportExportBundle\Tests\Entity\TestEntity;
 
 use function file_put_contents;
+use function is_bool;
+use function is_file;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
@@ -126,6 +129,16 @@ final class ImporterTest extends TestCase
         $result = $this->importer()->import($this->file("name\nAlice\n", 'IMPORT.CSV'), TestEntity::class, 'form');
 
         self::assertTrue($result->isValid());
+    }
+
+    public function testUnsupportedFileExtensionIsRejected(): void
+    {
+        $this->configure(['name']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unsupported file type: txt');
+
+        $this->importer()->import($this->file('name', 'import.txt'), TestEntity::class, 'form');
     }
 
     public function testMixedCaseXlsxExtensionIsAccepted(): void

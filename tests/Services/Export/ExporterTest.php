@@ -6,25 +6,26 @@ namespace HugoSEIGLE\SymfonyImportExportBundle\Tests\Services\Export;
 
 use DateTime;
 use Doctrine\ORM\Query;
-use function file_get_contents;
-use function file_put_contents;
-use function ob_get_clean;
-use function ob_start;
-use function sys_get_temp_dir;
-use function tempnam;
-use function unlink;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use HugoSEIGLE\SymfonyImportExportBundle\Services\Export\Exporter;
 use HugoSEIGLE\SymfonyImportExportBundle\Services\Export\ExporterInterface;
 use HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnake;
 use HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 use HugoSEIGLE\SymfonyImportExportBundle\Tests\Entity\TestEntity;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Contracts\Translation\TranslatorInterface;
+
+use function array_map;
+use function file_get_contents;
+use function file_put_contents;
+use function implode;
+use function ob_get_clean;
+use function ob_start;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
 
 class ExporterTest extends TestCase
 {
@@ -37,7 +38,6 @@ class ExporterTest extends TestCase
         $translatorMock->method('trans')->willReturnArgument(0);
 
         /** @var TranslatorInterface $translatorMock */
-
         $this->methodToSnake = new MethodToSnake();
 
         $this->exporter = new Exporter($translatorMock, $this->methodToSnake);
@@ -102,12 +102,10 @@ class ExporterTest extends TestCase
 
         $csv = file_get_contents($tempFilePath);
 
-        $expectedHeaders = implode(',', array_map(fn($method) => 'import_export.' . $this->methodToSnake->convert($method), $methods));
+        $expectedHeaders = implode(',', array_map(fn ($method) => 'import_export.' . $this->methodToSnake->convert($method), $methods));
 
         $expectedCsv = $expectedHeaders . "\n"
         . "1,\"John Doe\",john@example.com,\"2023-01-01 10:00:00\",\"2023-01-02 12:00:00\",99.99,\"tag1, tag2\",true\n";
-
-
 
         $this->assertEquals($expectedCsv, $csv);
 

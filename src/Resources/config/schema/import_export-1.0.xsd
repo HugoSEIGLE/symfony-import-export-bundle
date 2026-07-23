@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           targetNamespace="https://example.com/schema/dic/import_export"
+           targetNamespace="https://raw.githubusercontent.com/HugoSEIGLE/symfony-import-export-bundle/refs/heads/main/src/Resources/config/schema/import_export"
            elementFormDefault="qualified">
 
     <xs:element name="import_export">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="date_format" type="xs:string" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="date_format" type="xs:string" minOccurs="0" maxOccurs="1"/>
 
-                <xs:element name="bool_true" type="xs:string" minOccurs="1" maxOccurs="1"/>
-                <xs:element name="bool_false" type="xs:string" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="bool_true" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="bool_false" type="xs:string" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="validate_headers" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
 
                 <xs:element name="csv" minOccurs="0" maxOccurs="1">
@@ -23,10 +23,10 @@
                     </xs:complexType>
                 </xs:element>
 
-                <xs:element name="importers" minOccurs="1" maxOccurs="1">
+                <xs:element name="importers" minOccurs="0" maxOccurs="1">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="entity" minOccurs="1" maxOccurs="unbounded">
+                            <xs:element name="importer" minOccurs="0" maxOccurs="unbounded">
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="fields" minOccurs="1" maxOccurs="1">
@@ -37,10 +37,10 @@
                                             </xs:complexType>
                                         </xs:element>
 
-                                        <xs:element name="allow_delete" type="xs:boolean" minOccurs="1" maxOccurs="1"/>
+                                        <xs:element name="allow_delete" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
                                         <xs:element name="validate_headers" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
 
-                                        <xs:element name="unique_fields" minOccurs="1" maxOccurs="1">
+                                        <xs:element name="unique_fields" minOccurs="0" maxOccurs="1">
                                             <xs:complexType>
                                                 <xs:sequence>
                                                     <xs:element name="field" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
@@ -48,7 +48,7 @@
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
-                                    <xs:attribute name="name" type="xs:string" use="required"/>
+                                    <xs:attribute name="class" type="xs:string" use="required"/>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>

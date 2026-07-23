@@ -1,0 +1,48 @@
+name: Bug report
+description: Report reproducible incorrect behavior
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting a bug. For vulnerabilities, follow SECURITY.md instead.
+  - type: input
+    id: bundle-version
+    attributes:
+      label: Bundle version
+      placeholder: v2.0.1
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: PHP, Symfony, and Doctrine versions
+      placeholder: PHP 8.3, Symfony 7.4, Doctrine ORM 3.5
+    validations:
+      required: true
+  - type: dropdown
+    id: format
+    attributes:
+      label: File format
+      options: [CSV, XLSX, Not format-specific]
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: Include configuration and code, but no sensitive data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and stack trace
+    validations:
+      required: true

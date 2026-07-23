@@ -4,6 +4,17 @@ declare(strict_types=1);
 
 namespace HugoSEIGLE\SymfonyImportExportBundle\Tests\Services\Import;
 
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterInterface;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterTemplate;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterTemplateInterface;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnake;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnakeInterface;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Contracts\Translation\TranslatorInterface;
+
 use function file_get_contents;
 use function file_put_contents;
 use function ob_get_clean;
@@ -11,18 +22,6 @@ use function ob_start;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Contracts\Translation\TranslatorInterface;
-use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterInterface;
-use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterTemplate;
-use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterTemplateInterface;
-use HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnake;
-use HugoSEIGLE\SymfonyImportExportBundle\Services\MethodToSnakeInterface;
 
 class ImportTemplateGeneratorTest extends TestCase
 {
