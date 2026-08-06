@@ -1,4 +1,6 @@
 /vendor
+/coverage.xml
+/benchmarks/results/
 .php-cs-fixer.cache
 .phpunit.result.cache
 /demo/.env.local

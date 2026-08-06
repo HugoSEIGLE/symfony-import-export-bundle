@@ -45,6 +45,7 @@
     },
     "autoload-dev": {
         "psr-4": {
+            "HugoSEIGLE\\SymfonyImportExportBundle\\Benchmarks\\": "benchmarks/src/",
             "HugoSEIGLE\\SymfonyImportExportBundle\\Tests\\": "tests/"
         }
     },
@@ -64,8 +65,10 @@
         }
     },
     "scripts": {
+        "benchmark": "php benchmarks/run.php",
         "lint": "php-cs-fixer fix --dry-run --diff",
         "phpstan": "phpstan analyse",
-        "test": "phpunit --configuration phpunit.xml.dist"
+        "test": "phpunit --configuration phpunit.xml.dist",
+        "test:coverage": "phpunit --configuration phpunit.xml.dist --coverage-clover coverage.xml"
     }
 }
