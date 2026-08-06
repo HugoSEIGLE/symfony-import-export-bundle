@@ -32,6 +32,10 @@ Import and export Doctrine entities from Excel and CSV in Symfony applications.
 - Doctrine ORM 3.2 or newer within 3.x
 - PhpSpreadsheet 2.3.5 or newer within 2.x
 
+## Getting started
+
+Follow the [5-minute quick guide](docs/getting-started.md) to configure a Doctrine entity, import your first CSV file, and expose a CSV or XLSX export endpoint.
+
 ## Installation
 
 ```bash
