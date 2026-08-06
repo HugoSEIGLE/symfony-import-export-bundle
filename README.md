@@ -10,7 +10,7 @@ Import and export Doctrine entities from Excel and CSV in Symfony applications.
 [![Latest release](https://img.shields.io/github/v/release/HugoSEIGLE/symfony-import-export-bundle?label=release)](https://github.com/HugoSEIGLE/symfony-import-export-bundle/releases)
 [![License](https://img.shields.io/packagist/l/hugoseigle/symfony-import-export-bundle)](LICENSE)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20max-brightgreen)](...)
-[![codecov](https://codecov.io/gh/HugoSEIGLE/symfony-import-export-bundle/branch/main/graph/badge.svg)](https://codecov.io/gh/HugoSEIGLE/symfony-import-export-bundle)
+[![codecov](https://codecov.io/github/HugoSEIGLE/symfony-import-export-bundle/graph/badge.svg?token=LHSR82SL5W)](https://codecov.io/github/HugoSEIGLE/symfony-import-export-bundle)
 
 
 ![Symfony Import Export Bundle demo](docs/images/demo.png)
@@ -196,6 +196,10 @@ composer phpstan
 ```
 
 CI runs supported PHP/Symfony combinations. `composer lint` is read-only.
+
+## Performance
+
+Reproducible CLI benchmarks cover CSV/XLSX imports and exports with selectable dataset sizes. See the [performance benchmark guide](docs/performance.md) for commands, methodology, environment reporting, and interpretation guidance.
 
 ## Contributing
 
