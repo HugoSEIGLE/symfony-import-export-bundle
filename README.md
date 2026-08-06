@@ -13,7 +13,7 @@ Import and export Doctrine entities from Excel and CSV in Symfony applications.
 [![codecov](https://codecov.io/github/HugoSEIGLE/symfony-import-export-bundle/graph/badge.svg?token=LHSR82SL5W)](https://codecov.io/github/HugoSEIGLE/symfony-import-export-bundle)
 
 
-![Symfony Import Export Bundle demo](docs/images/demo.png)
+![Symfony Import Export Bundle demo](docs/images/demo.gif)
 
 ## Features
 
