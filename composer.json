@@ -66,6 +66,7 @@
     "scripts": {
         "lint": "php-cs-fixer fix --dry-run --diff",
         "phpstan": "phpstan analyse",
-        "test": "phpunit --configuration phpunit.xml.dist"
+        "test": "phpunit --configuration phpunit.xml.dist",
+        "test:coverage": "phpunit --configuration phpunit.xml.dist --coverage-clover coverage.xml"
     }
 }

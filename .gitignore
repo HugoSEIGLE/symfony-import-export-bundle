@@ -1,4 +1,5 @@
 /vendor
+/coverage.xml
 .php-cs-fixer.cache
 .phpunit.result.cache
 /demo/.env.local

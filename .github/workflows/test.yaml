@@ -20,7 +20,7 @@ jobs:
           - { php: '8.3', symfony: '6.4.*' }
           - { php: '8.3', symfony: '7.4.*' }
           - { php: '8.4', symfony: '6.4.*' }
-          - { php: '8.4', symfony: '7.4.*' }
+          - { php: '8.4', symfony: '7.4.*', coverage: true }
           - { php: '8.4', symfony: '8.0.*' }
           - { php: '8.4', symfony: '8.1.*' }
           - { php: '8.5', symfony: '7.4.*' }
@@ -35,7 +35,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          coverage: none
+          coverage: ${{ matrix.coverage && 'pcov' || 'none' }}
 
       - name: Validate Composer metadata
         run: composer validate --strict
@@ -49,8 +49,25 @@ jobs:
       - name: Check PSR-4 autoloading
         run: composer dump-autoload --optimize --strict-psr
 
+      - name: Check for security vulnerabilities
+        run: composer audit --no-interaction
+
       - name: Run tests
+        if: ${{ !matrix.coverage }}
         run: composer test
+
+      - name: Run tests with coverage
+        if: ${{ matrix.coverage }}
+        run: composer test:coverage
+
+      - name: Upload coverage to Codecov
+        if: ${{ matrix.coverage }}
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          disable_search: true
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Check coding standards
         run: composer lint
