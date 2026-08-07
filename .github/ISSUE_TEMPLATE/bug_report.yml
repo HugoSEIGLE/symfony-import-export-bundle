@@ -1,48 +1,122 @@
 name: Bug report
-description: Report reproducible incorrect behavior
+description: Report reproducible behavior that does not work as expected
 title: "[Bug]: "
-labels: [bug]
+labels:
+  - bug
 body:
   - type: markdown
     attributes:
-      value: Thanks for reporting a bug. For vulnerabilities, follow SECURITY.md instead.
-  - type: input
-    id: bundle-version
+      value: |
+        Thank you for taking the time to report a bug.
+
+        Before submitting, search the existing issues and make sure the problem is caused by this bundle. **Do not disclose security vulnerabilities or include credentials, personal data, or production datasets here.** Use the private security reporting link instead.
+
+  - type: checkboxes
+    id: checks
     attributes:
-      label: Bundle version
-      placeholder: v2.0.1
+      label: Before submitting
+      options:
+        - label: I searched the existing issues and did not find a duplicate.
+          required: true
+        - label: I reproduced the issue with a supported version of the bundle.
+          required: true
+        - label: This report does not contain a security vulnerability or sensitive data.
+          required: true
+
+  - type: dropdown
+    id: operation
+    attributes:
+      label: Affected operation
+      description: Which part of the bundle is affected?
+      options:
+        - Import
+        - Export
+        - Import template generation
+        - Configuration or dependency injection
+        - Other
     validations:
       required: true
-  - type: input
-    id: environment
-    attributes:
-      label: PHP, Symfony, and Doctrine versions
-      placeholder: PHP 8.3, Symfony 7.4, Doctrine ORM 3.5
-    validations:
-      required: true
+
   - type: dropdown
     id: format
     attributes:
       label: File format
-      options: [CSV, XLSX, Not format-specific]
+      options:
+        - CSV
+        - XLSX
+        - Both CSV and XLSX
+        - Not applicable
     validations:
       required: true
+
   - type: textarea
-    id: reproduce
+    id: versions
+    attributes:
+      label: Package versions
+      description: Run `composer show hugoseigle/symfony-import-export-bundle php symfony/framework-bundle doctrine/orm phpoffice/phpspreadsheet` and paste the relevant versions.
+      placeholder: |
+        symfony-import-export-bundle: 2.x.x
+        PHP: 8.x.x
+        Symfony: 7.x.x
+        Doctrine ORM: 3.x.x
+        PhpSpreadsheet: 2.x.x
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Runtime environment
+      description: Operating system and relevant runtime details.
+      placeholder: Ubuntu 24.04, PHP-FPM
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem description
+      description: Clearly describe what goes wrong and when.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
     attributes:
       label: Minimal reproduction
-      description: Include configuration and code, but no sensitive data.
+      description: Provide the smallest configuration and PHP code that reproduce the issue. Use synthetic data only.
+      placeholder: |
+        1. Configure an importer for ...
+        2. Import/export a synthetic file containing ...
+        3. Observe ...
     validations:
       required: true
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Bundle configuration
+      description: Paste the relevant sanitized configuration, if applicable.
+      render: yaml
+
   - type: textarea
     id: expected
     attributes:
       label: Expected behavior
+      description: What did you expect to happen?
     validations:
       required: true
+
   - type: textarea
     id: actual
     attributes:
-      label: Actual behavior and stack trace
+      label: Actual behavior and logs
+      description: What happened instead? Include the full exception and stack trace when useful, after removing sensitive data.
     validations:
       required: true
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Add any other useful context, such as whether the demo application reproduces the issue.

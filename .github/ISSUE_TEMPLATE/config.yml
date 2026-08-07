@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/HugoSEIGLE/symfony-import-export-bundle#readme
+    about: Check the guides, supported versions, and examples before opening an issue.
+  - name: Security vulnerability
+    url: https://github.com/HugoSEIGLE/symfony-import-export-bundle/security/advisories/new
+    about: Report vulnerabilities privately. Never disclose security details in a public issue.

@@ -1,29 +1,93 @@
 name: Feature request
-description: Propose a focused improvement
+description: Suggest an improvement or a new capability for the bundle
 title: "[Feature]: "
-labels: [enhancement]
+labels:
+  - enhancement
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an improvement. Please focus on the problem to solve and explain how it fits an import/export bundle rather than an application-specific workflow.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues and did not find an equivalent request.
+          required: true
+        - label: I checked the documentation and current extension points.
+          required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Feature area
+      options:
+        - Import
+        - Export
+        - Import template generation
+        - Configuration
+        - Validation and error handling
+        - Documentation
+        - Performance
+        - Other
+    validations:
+      required: true
+
   - type: textarea
     id: problem
     attributes:
       label: Problem to solve
-      description: Describe the application need, not only a preferred implementation.
+      description: Describe the use case, limitation, or recurring difficulty. Examples are welcome.
     validations:
       required: true
+
   - type: textarea
-    id: proposal
+    id: solution
     attributes:
-      label: Proposed behavior
+      label: Proposed solution
+      description: Explain the API, configuration, or behavior you would like to see.
     validations:
       required: true
+
   - type: textarea
     id: alternatives
     attributes:
       label: Alternatives considered
+      description: Describe any workarounds, service decoration, form transformers, or other approaches you considered.
+
   - type: dropdown
     id: compatibility
     attributes:
-      label: Could this require a breaking API change?
-      options: ['No', 'Unsure', 'Yes']
+      label: Backward compatibility
+      description: Would the proposal require users to change existing code or configuration?
+      options:
+        - No, it is backward compatible
+        - Yes, it may require changes
+        - I am not sure
     validations:
       required: true
+
+  - type: textarea
+    id: api_example
+    attributes:
+      label: Example usage
+      description: Show how the proposed API or configuration could look, if applicable.
+      render: php
+
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you willing to help implement this feature?
+      options:
+        - Yes, I can submit a pull request
+        - Yes, with guidance
+        - No
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Add links, examples, or other context that helps explain the request.
