@@ -59,7 +59,7 @@ body:
         PHP: 8.x.x
         Symfony: 7.x.x
         Doctrine ORM: 3.x.x
-        PhpSpreadsheet: 2.x.x
+        PhpSpreadsheet: 3.x.x or 5.x.x
     validations:
       required: true
 
