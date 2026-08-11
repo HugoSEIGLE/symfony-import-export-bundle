@@ -5,7 +5,7 @@
 - PHP 8.1 or newer
 - Symfony 6.4, 7.x or 8.x
 - Doctrine ORM 3.2 or newer within the supported 3.x line
-- PhpSpreadsheet 2.3.5 or newer within the supported 2.x line
+- PhpSpreadsheet 3.10.7+ or 5.9+
 
 Install the bundle as a production dependency:
 

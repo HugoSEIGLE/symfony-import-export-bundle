@@ -29,7 +29,7 @@ Import and export Doctrine entities from Excel and CSV in Symfony applications.
 - PHP 8.1 or newer
 - Symfony 6.4, 7.x, or 8.x
 - Doctrine ORM 3.2 or newer within 3.x
-- PhpSpreadsheet 2.3.5 or newer within 2.x
+- PhpSpreadsheet 3.10.7+ or 5.9+
 
 ## Getting started
 
@@ -180,7 +180,7 @@ Then open the URL printed by Symfony CLI. A ready-to-import [`companies.csv`](de
 
 | Bundle | PHP | Symfony | Doctrine ORM | PhpSpreadsheet |
 | --- | ---: | ---: | ---: | ---: |
-| 2.x | >= 8.1 | 6.4 / 7.x / 8.x | >= 3.2, < 4.0 | >= 2.3.5, < 3.0 |
+| 2.x | >= 8.1 | 6.4 / 7.x / 8.x | >= 3.2, < 4.0 | >= 3.10.7, < 4.0 or >= 5.9, < 6.0 |
 
 Composer also enforces each Symfony release's own PHP requirement. Version 1.x users must follow the [upgrade guide](docs/upgrading.md), especially for the canonical `HugoSEIGLE\SymfonyImportExportBundle` namespace and result-based import API.
 
