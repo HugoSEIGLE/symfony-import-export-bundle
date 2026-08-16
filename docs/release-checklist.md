@@ -1,8 +1,8 @@
 # Release checklist
 
-1. Confirm the changelog date and release notes.
+1. Choose the target version (for example `v2.1.3`) and update the changelog date and release notes.
 2. Confirm CI is green on every supported PHP/Symfony combination.
-3. Confirm `v2.0.1` does not already exist locally or remotely. This repository currently has such a tag, so reconcile it before attempting to publish this release; never move a published tag silently.
+3. Confirm the target tag does not already exist locally or remotely. Never move or rewrite a published tag silently.
 4. Run:
 
 ```bash
@@ -19,10 +19,10 @@ git status
 5. After committing the reviewed release changes, create and push the tag only if the tag name is available:
 
 ```bash
-git tag -a v2.0.1 -m "Release v2.0.1"
-git push origin v2.0.1
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
 ```
 
-6. Create the GitHub release from `docs/github-release-v2.0.1.md`.
+6. Create the GitHub release from the matching document in `docs/` (for example `docs/github-release-v2.1.3.md`).
 7. Verify the GitHub/Packagist webhook ran, or trigger “Update” on Packagist.
 8. Install `hugoseigle/symfony-import-export-bundle:^2.0` in a clean Symfony application as a smoke test.

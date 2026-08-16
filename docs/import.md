@@ -1,6 +1,6 @@
 # Importing
 
-An import is a preview of candidate entity changes. The bundle parses CSV/XLSX rows, uses Doctrine metadata for type conversion, submits each row to a Symfony form, and returns an `ImportResult`. It never calls `persist()`, `remove()`, or `flush()`.
+An import is a preview of candidate entity changes. The bundle parses CSV/XLSX rows, uses Doctrine metadata for type conversion, submits each row to a Symfony form, and returns an `ImportResult`. It schedules `persist()` and `remove()` operations for valid create/delete rows, but it never calls `flush()`.
 
 ## Configure an entity
 

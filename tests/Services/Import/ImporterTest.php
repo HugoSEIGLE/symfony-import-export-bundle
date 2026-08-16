@@ -279,6 +279,22 @@ final class ImporterTest extends TestCase
         self::assertSame([], $result->getUpdatedEntities());
     }
 
+    public function testCreateSchedulesEntityForPersistence(): void
+    {
+        $this->configure(['name']);
+        $this->formFactory->method('create')->willReturn($this->validForm());
+        $this->entityManager->expects(self::once())->method('persist');
+
+        $result = $this->importer()->import(
+            $this->file("name\nAlice\n"),
+            TestEntity::class,
+            'form',
+        );
+
+        self::assertTrue($result->isValid());
+        self::assertCount(1, $result->getCreatedEntities());
+    }
+
     public function testDeleteCanBeDisabledPerImport(): void
     {
         $this->configure(['name'], allowDelete: true, uniqueFields: ['name']);
@@ -315,6 +331,7 @@ final class ImporterTest extends TestCase
         $this->configure(['name'], allowDelete: true, uniqueFields: ['name']);
         $this->repositoryReturning(new TestEntity());
         $this->formFactory->method('create')->willReturn($this->validForm());
+        $this->entityManager->expects(self::once())->method('remove');
 
         $result = $this->importer()->import(
             $this->file("name,deleted\nAlice,TRUE\n"),

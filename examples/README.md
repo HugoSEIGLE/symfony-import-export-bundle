@@ -8,7 +8,7 @@ The import endpoint expects a `multipart/form-data` POST with a `file` field. It
 name,email,active
 ```
 
-The importer validates each row through `CompanyImportType` and returns structured errors without writing anything when one or more rows are invalid. The application, not the bundle, owns persistence and transaction policy.
+The importer validates each row through `CompanyImportType`, schedules create/delete changes for valid rows, and returns structured errors when one or more rows are invalid. The application owns transaction policy and calls `flush()`.
 
 The export endpoint returns the same business columns as CSV. Change `ExporterInterface::CSV` to `ExporterInterface::XLSX` to generate Excel instead.
 
