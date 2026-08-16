@@ -43,11 +43,7 @@ final class CompanyImportController extends AbstractController
             ], 422);
         }
 
-        $entityManager->wrapInTransaction(function (EntityManagerInterface $entityManager) use ($result): void {
-            foreach ($result->getCreatedEntities() as $company) {
-                $entityManager->persist($company);
-            }
-        });
+        $entityManager->flush();
 
         return $this->json([
             'created' => count($result->getCreatedEntities()),

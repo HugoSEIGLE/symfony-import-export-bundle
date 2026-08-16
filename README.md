@@ -21,7 +21,7 @@ Import and export Doctrine entities from Excel and CSV in Symfony applications.
 - Symfony Form validation and data transformation for every imported row.
 - Doctrine metadata conversion for booleans, dates, backed enums, and associations.
 - Create, update, and optional delete candidates identified by configured unique fields.
-- Structured row errors without automatic database writes.
+- Structured row errors with explicit flush control in the application.
 - Configurable date, boolean, CSV, BOM, and strict-header behavior.
 
 ## Requirements
@@ -101,7 +101,7 @@ $result = $importer->import(
 );
 ```
 
-The result exposes `getCreatedEntities()`, `getUpdatedEntities()`, and `getDeletedEntities()`. The bundle does not persist, remove, flush, or start a transaction; your application decides whether and how to apply candidates. See [importing](docs/import.md).
+The result exposes `getCreatedEntities()`, `getUpdatedEntities()`, and `getDeletedEntities()`. The bundle schedules `persist()` and `remove()` operations while importing; your application stays in control of transaction boundaries and must call `flush()`. See [importing](docs/import.md).
 
 ## Validation and error handling
 

@@ -157,7 +157,7 @@ class Importer implements ImporterInterface
                     if (!$allowDelete) {
                         $this->addOperationNotAllowedError($result, $rowNumber, 'delete');
                     } else {
-                        $result->addDeletedEntity($existingEntity);
+                        $this->deleteEntity($result, $existingEntity);
                     }
                 } elseif (!$allowUpdate) {
                     $this->addOperationNotAllowedError($result, $rowNumber, 'update');
@@ -173,7 +173,7 @@ class Importer implements ImporterInterface
             } elseif (!$allowCreate) {
                 $this->addOperationNotAllowedError($result, $rowNumber, 'create');
             } else {
-                $result->addCreatedEntity($entity);
+                $this->createEntity($result, $entity);
             }
         }
 
@@ -367,6 +367,18 @@ class Importer implements ImporterInterface
         }
 
         $result->addUpdatedEntity($existingEntity);
+    }
+
+    private function createEntity(ImportResult $result, object $entity): void
+    {
+        $this->entityManager->persist($entity);
+        $result->addCreatedEntity($entity);
+    }
+
+    private function deleteEntity(ImportResult $result, object $entity): void
+    {
+        $this->entityManager->remove($entity);
+        $result->addDeletedEntity($entity);
     }
 
     /** @param list<string> $uniqueFields

@@ -60,12 +60,6 @@ final class DemoController extends AbstractController
             return $this->redirectToRoute('app_demo');
         }
 
-        foreach ($result->getCreatedEntities() as $company) {
-            $entityManager->persist($company);
-        }
-        foreach ($result->getDeletedEntities() as $company) {
-            $entityManager->remove($company);
-        }
         $entityManager->flush();
 
         $this->addFlash('success', sprintf(
