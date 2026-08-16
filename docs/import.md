@@ -32,6 +32,31 @@ $result = $importer->import($file, Company::class, CompanyImportType::class);
 
 `getCreatedEntities()`, `getUpdatedEntities()`, and `getDeletedEntities()` return candidate changes. `getErrors()` returns `ImportError` values containing `row`, `field`, `message`, and `value`. Rows are processed independently.
 
+Typical application flow is to import, stop on validation errors, and only flush when valid:
+
+```php
+use App\Entity\Company;
+use App\Form\CompanyImportType;
+use Doctrine\ORM\EntityManagerInterface;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImportError;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImporterInterface;
+
+$result = $importer->import($file, Company::class, CompanyImportType::class);
+
+if (!$result->isValid()) {
+    $errors = array_map(static fn (ImportError $error): array => [
+        'row' => $error->row,
+        'field' => $error->field,
+        'message' => $error->message,
+        'value' => $error->value,
+    ], $result->getErrors());
+
+    // return or display the errors; do not flush
+}
+
+$entityManager->flush();
+```
+
 ## Operation permissions
 
 The final named arguments restrict a particular call:

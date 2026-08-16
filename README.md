@@ -103,6 +103,28 @@ $result = $importer->import(
 
 The result exposes `getCreatedEntities()`, `getUpdatedEntities()`, and `getDeletedEntities()`. The bundle schedules `persist()` and `remove()` operations while importing; your application stays in control of transaction boundaries and must call `flush()`. See [importing](docs/import.md).
 
+Typical controller flow:
+
+```php
+use Doctrine\ORM\EntityManagerInterface;
+use HugoSEIGLE\SymfonyImportExportBundle\Services\Import\ImportError;
+
+$result = $importer->import($uploadedFile, Company::class, CompanyImportType::class);
+
+if (!$result->isValid()) {
+    $errors = array_map(static fn (ImportError $error): array => [
+        'row' => $error->row,
+        'field' => $error->field,
+        'message' => $error->message,
+        'value' => $error->value,
+    ], $result->getErrors());
+
+    // return or display the errors; do not flush
+}
+
+$entityManager->flush();
+```
+
 ## Validation and error handling
 
 ```php
@@ -118,7 +140,7 @@ if (!$result->isValid()) {
 }
 ```
 
-Header mismatches stop the import. Row errors accumulate while later rows continue. Persist only after applying your chosen all-or-partial import policy; [validation guidance](docs/validation.md) shows the relevant edge cases.
+Header mismatches stop the import. Row errors accumulate while later rows continue. Call `flush()` only when your chosen all-or-partial import policy allows it; [validation guidance](docs/validation.md) shows the relevant edge cases.
 
 ## Supported formats
 
