@@ -12,7 +12,6 @@ Import and export Doctrine entities from Excel and CSV in Symfony applications.
 [![PHPStan Level](https://img.shields.io/badge/PHPStan-level%20max-brightgreen.svg)](phpstan.neon)
 [![codecov](https://codecov.io/gh/HugoSEIGLE/symfony-import-export-bundle/graph/badge.svg)](https://codecov.io/gh/HugoSEIGLE/symfony-import-export-bundle)
 [![Qlty maintainability](https://qlty.sh/gh/HugoSEIGLE/projects/symfony-import-export-bundle/maintainability.svg)](https://qlty.sh/gh/HugoSEIGLE/projects/symfony-import-export-bundle)
-[![Qlty coverage](https://qlty.sh/gh/HugoSEIGLE/projects/symfony-import-export-bundle/coverage.svg)](https://qlty.sh/gh/HugoSEIGLE/projects/symfony-import-export-bundle)
 
 ![Symfony Import Export Bundle demo](docs/images/demo.png)
 
