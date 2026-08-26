@@ -11,6 +11,8 @@ Import and export Doctrine entities from Excel and CSV in Symfony applications.
 [![License](https://img.shields.io/packagist/l/hugoseigle/symfony-import-export-bundle)](LICENSE)
 [![PHPStan Level](https://img.shields.io/badge/PHPStan-level%20max-brightgreen.svg)](phpstan.neon)
 [![codecov](https://codecov.io/gh/HugoSEIGLE/symfony-import-export-bundle/graph/badge.svg)](https://codecov.io/gh/HugoSEIGLE/symfony-import-export-bundle)
+[![Qlty maintainability](https://qlty.sh/gh/HugoSEIGLE/projects/symfony-import-export-bundle/maintainability.svg)](https://qlty.sh/gh/HugoSEIGLE/projects/symfony-import-export-bundle)
+[![Qlty coverage](https://qlty.sh/gh/HugoSEIGLE/projects/symfony-import-export-bundle/coverage.svg)](https://qlty.sh/gh/HugoSEIGLE/projects/symfony-import-export-bundle)
 
 ![Symfony Import Export Bundle demo](docs/images/demo.png)
 
@@ -214,9 +216,16 @@ composer dump-autoload --optimize --strict-psr
 composer test
 composer lint
 composer phpstan
+qlty check
 ```
 
-CI runs supported PHP/Symfony combinations. `composer lint` is read-only.
+The same checks are available through `make`: run `make help` to list every
+target or `make quality` to execute the complete local quality suite.
+
+CI runs supported PHP/Symfony combinations and publishes the coverage report to
+[Qlty](https://qlty.sh/gh/HugoSEIGLE/projects/symfony-import-export-bundle).
+`composer lint` and `qlty check` are read-only. Install the
+[Qlty CLI](https://docs.qlty.sh/cli/quickstart) before running the latter locally.
 
 ## Performance
 
