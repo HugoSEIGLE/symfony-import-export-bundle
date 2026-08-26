@@ -1,18 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
 
+$paths = \array_filter([
+    __DIR__ . '/benchmarks',
+    __DIR__ . '/demo/bin',
+    __DIR__ . '/demo/public',
+    __DIR__ . '/demo/src',
+    __DIR__ . '/examples',
+    __DIR__ . '/src',
+    __DIR__ . '/tests',
+], 'is_dir');
+
 $finder = (new Finder())
-    ->in([
-        __DIR__ . '/benchmarks',
-        __DIR__ . '/demo/bin',
-        __DIR__ . '/demo/public',
-        __DIR__ . '/demo/src',
-        __DIR__ . '/examples',
-        __DIR__ . '/src',
-        __DIR__ . '/tests',
-    ])
+    ->in($paths)
     ->exclude([
         'config/secrets',
         'node_modules',
